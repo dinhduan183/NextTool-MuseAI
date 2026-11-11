@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NextTool - Muse AI</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20width%3D%22120%22%20height%3D%22120%22%20rx%3D%2228%22%20fill%3D%22%235b5bd6%22/%3E%3Cpath%20d%3D%22M40%2032%20L80%2060%20L40%2088%20Z%22%20fill%3D%22%23fff%22%20stroke%3D%22%23fff%22%20stroke-width%3D%228%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M94%2016%20Q96%2028%20106%2030%20Q96%2032%2094%2044%20Q92%2032%2082%2030%20Q92%2028%2094%2016%20Z%22%20fill%3D%22%23ffd166%22/%3E%3Cpath%20d%3D%22M102%2052%20Q103%2058%20108%2059%20Q103%2060%20102%2066%20Q101%2060%2096%2059%20Q101%2058%20102%2052%20Z%22%20fill%3D%22%23ffd166%22/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg:#f4f4f1; --card:#fff; --line:#e6e5e0; --line2:#d6d5cf; --text:#1c1c1a; --mut:#76756e; --soft:#f7f7f4;
+    --acc:#3a5bd9; --acc-soft:#eef1fc; --ok:#1e8e4f; --ok-soft:#e6f5ec; --err:#cf3c3c; --err-soft:#fcebeb;
+    --warn:#b7790b; --warn-soft:#fdf4de; --gray-soft:#efefec; --r:12px;
+  }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; font:14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
+  button, input, textarea, select { font:inherit; color:inherit; }
+  button { cursor:pointer; border:1px solid var(--line2); background:#fff; border-radius:8px; padding:6px 12px; transition:background .12s, border-color .12s; }
+  button:hover { background:var(--soft); }
+  button:disabled { opacity:.45; cursor:default; }
+  button.primary { background:var(--acc); border-color:var(--acc); color:#fff; font-weight:600; }
+  button.primary:hover { filter:brightness(1.07); }
+  button.ghost { border-color:transparent; background:transparent; color:var(--mut); }
+  button.ghost:hover { background:var(--gray-soft); color:var(--text); }
+  button.sm { padding:3px 9px; font-size:12px; border-radius:7px; }
+  textarea, input[type=text], input[type=number] { width:100%; border:1px solid var(--line2); border-radius:9px; padding:9px 11px; background:#fff; outline:none; }
+  textarea:focus, input:focus { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-soft); }
+  textarea { resize:vertical; }
+  .mut { color:var(--mut); }
+  .small { font-size:12px; }
+
+  /* Header */
+  header { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:14px; padding:12px 24px; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  .brand { font-weight:700; font-size:17px; display:flex; align-items:center; gap:8px; }
+  .brand .logo { width:28px; height:28px; flex:none; display:block; }
+  .upd-box { margin:0 4px 10px; padding:10px 12px; border-radius:10px; background:var(--acc-soft); font-size:12.5px; line-height:1.4; }
+  .upd-box button { margin-top:8px; width:100%; justify-content:center; }
+  .brand-t { display:flex; flex-direction:column; line-height:1.2; }
+  .brand-t small { font-size:11px; font-weight:500; color:var(--mut); }
+  .brand .logo svg { width:100%; height:100%; display:block; }
+  .stats { display:flex; gap:8px; margin-left:8px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:3px 10px; border-radius:20px; background:var(--gray-soft); color:var(--mut); white-space:nowrap; }
+  .chip b { color:var(--text); font-weight:600; }
+  .chip.run { background:var(--warn-soft); color:var(--warn); } .chip.run b { color:var(--warn); }
+  .chip.ok { background:var(--ok-soft); color:var(--ok); } .chip.ok b { color:var(--ok); }
+  .chip.err { background:var(--err-soft); color:var(--err); } .chip.err b { color:var(--err); }
+  .sp { flex:1; }
+  .pop { position:relative; }
+  .pop .panel { display:none; position:absolute; right:0; top:calc(100% + 8px); width:280px; background:#fff; border:1px solid var(--line); border-radius:var(--r); box-shadow:0 12px 32px rgba(0,0,0,.12); padding:14px; }
+  .pop.on .panel { display:block; }
+  .setrow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; }
+  .setrow + .setrow { border-top:1px solid var(--line); }
+
+
+  /* Sidebar + trang */
+  .app { display:grid; grid-template-columns:236px minmax(0,1fr); min-height:100vh; }
+  .side { position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:6px; padding:18px 14px; background:#fff; border-right:1px solid var(--line); }
+  .side .brand { padding:2px 8px 16px; }
+  .navs { display:flex; flex-direction:column; gap:2px; }
+  .nav { display:flex; align-items:center; gap:11px; width:100%; border:none; background:transparent; padding:9px 10px; border-radius:9px; color:var(--mut); font-weight:500; text-align:left; }
+  .nav svg { width:19px; height:19px; flex:none; }
+  .nav span:first-of-type { flex:1; }
+  .nav:hover { background:var(--soft); color:var(--text); }
+  .nav.on { background:var(--acc-soft); color:var(--acc); font-weight:600; }
+  .badge { font-size:11px; font-weight:600; padding:0 7px; border-radius:10px; background:var(--gray-soft); color:var(--mut); line-height:18px; }
+  .badge:empty { display:none; }
+  .badge.run { background:var(--warn-soft); color:var(--warn); }
+  .badge.err { background:var(--err-soft); color:var(--err); }
+  .nav-lbl { position:relative; }
+  .login-btn { width:100%; justify-content:center; margin-bottom:6px; }
+  .nb-err { position:absolute; top:-9px; right:-15px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:var(--err); color:#fff; font-size:10px; font-weight:700; line-height:16px; text-align:center; }
+  .noacc { display:flex; align-items:center; gap:10px; padding:10px 14px; margin-bottom:14px; border-radius:10px; background:var(--err-soft); color:var(--err); font-size:13px; font-weight:500; }
+  .noacc button { margin-left:auto; }
+  .side-stats { display:flex; flex-direction:column; gap:6px; padding:0 4px 8px; }
+  .side-stats .chip { justify-content:flex-start; }
+  .side-folder { width:100%; text-align:left; }
+  .content { padding:24px 32px 60px; max-width:1440px; width:100%; }
+  .page { display:none; }
+  .page.on { display:block; }
+  .page-h { display:flex; align-items:flex-end; gap:16px; margin-bottom:18px; }
+  .page-h h1 { margin:0; font-size:24px; letter-spacing:-.01em; }
+  .page-h p { margin:3px 0 0; color:var(--mut); font-size:13px; }
+  .page-acts { margin-left:auto; display:flex; gap:8px; }
+  #accs { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:14px; }
+  #accs .acc { margin:0; padding:14px 16px; }
+  #accs .empty-acc { grid-column:1/-1; background:#fff; border:1px dashed var(--line2); border-radius:var(--r); padding:40px; }
+  .set-card { max-width:760px; padding:6px 20px; }
+  .set-card .setrow { padding:16px 0; gap:24px; }
+  .st-t { font-weight:600; margin-bottom:2px; }
+  .num-unit { display:flex; align-items:center; gap:6px; width:110px; flex:none; }
+
+  /* Layout */
+  .wrap { display:grid; grid-template-columns: 330px minmax(0,1fr); gap:20px; padding:20px 24px 60px; max-width:1500px; margin:0 auto; align-items:start; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--r); }
+  .card-h { display:flex; align-items:center; gap:8px; padding:14px 16px 10px; }
+  .card-h h2 { margin:0; font-size:15px; }
+  .card-b { padding:0 16px 16px; }
+  aside { position:sticky; top:76px; }
+
+  /* Accounts */
+  .acc { border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-bottom:10px; background:#fff; }
+  .acc.off { opacity:.55; }
+  .acc-top { display:flex; align-items:center; gap:8px; }
+  .acc-name { font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pill { font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; }
+  .pill::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .pill.ok { background:var(--ok-soft); color:var(--ok); }
+  .pill.busy, .pill.checking { background:var(--warn-soft); color:var(--warn); }
+  .pill.busy::before, .pill.checking::before { animation:blink 1s infinite; }
+  .pill.invalid, .pill.exhausted { background:var(--err-soft); color:var(--err); }
+  .pill.new, .pill.off { background:var(--gray-soft); color:var(--mut); }
+  @keyframes blink { 50% { opacity:.25; } }
+  .usage { margin-top:9px; }
+  .usage-row { display:flex; justify-content:space-between; font-size:12px; }
+  .acc-no { flex:none; min-width:20px; height:20px; padding:0 5px; border-radius:6px; background:var(--gray-soft); color:var(--mut, #666); font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+  .bar { height:6px; border-radius:6px; background:var(--gray-soft); overflow:hidden; margin:4px 0 3px; }
+  .bar i { display:block; height:100%; border-radius:6px; background:var(--ok); }
+  .bar i.mid { background:var(--warn); } .bar i.high { background:var(--err); }
+  .acc-err { font-size:12px; color:var(--err); margin-top:6px; }
+  .acc-acts { display:flex; gap:4px; margin-top:8px; align-items:center; }
+  .switch { position:relative; width:30px; height:18px; flex:none; }
+  .switch input { opacity:0; width:0; height:0; }
+  .switch span { position:absolute; inset:0; background:#cfcfca; border-radius:20px; transition:.15s; cursor:pointer; }
+  .switch span::before { content:''; position:absolute; width:14px; height:14px; left:2px; top:2px; background:#fff; border-radius:50%; transition:.15s; }
+  .switch input:checked + span { background:var(--ok); }
+  .switch input:checked + span::before { transform:translateX(12px); }
+  .empty-acc { text-align:center; padding:18px 8px; color:var(--mut); font-size:13px; }
+
+  /* Create form */
+  .seg { display:inline-flex; background:var(--gray-soft); border-radius:10px; padding:3px; gap:2px; }
+  .seg button { border:none; background:transparent; padding:6px 14px; border-radius:8px; color:var(--mut); font-weight:500; }
+  .seg button.on { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  .seg.sm button { padding:4px 11px; font-size:13px; }
+  .lbl { font-size:12px; font-weight:600; color:var(--mut); margin:14px 0 6px; display:flex; align-items:center; gap:6px; }
+  .lbl:first-child { margin-top:0; }
+  .drop { border:1.5px dashed var(--line2); border-radius:10px; padding:18px; text-align:center; color:var(--mut); cursor:pointer; background:var(--soft); transition:.12s; }
+  .drop:hover, .drop.over { border-color:var(--acc); background:var(--acc-soft); color:var(--acc); }
+  .imgs { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-top:10px; }
+  .imgs.compact { grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); }
+  .img { position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff; }
+  .img img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--gray-soft); }
+  .img .x { position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:50%; padding:0; border:none; background:rgba(0,0,0,.55); color:#fff; font-size:13px; line-height:22px; }
+  .img .no { position:absolute; top:5px; left:5px; font-size:11px; font-weight:700; background:rgba(0,0,0,.55); color:#fff; border-radius:6px; padding:0 6px; }
+  .img textarea { border:none; border-top:1px solid var(--line); border-radius:0; font-size:12px; padding:7px 8px; min-height:52px; box-shadow:none !important; }
+  /* Ô prompt có đánh số */
+  .pe-wrap { position:relative; background:#fff; border-radius:9px; }
+  .pe-ta, .pe-back { font-size:14px; line-height:1.65; padding:10px 14px 10px 50px; white-space:pre-wrap; overflow-wrap:break-word; word-break:break-word; scrollbar-gutter:stable; tab-size:4; letter-spacing:normal; }
+  .pe-ta { position:relative; z-index:1; display:block; width:100%; height:320px; min-height:160px; background:transparent; resize:vertical; overflow-y:auto; }
+  .pe-back { position:absolute; inset:0; overflow:hidden; pointer-events:none; color:transparent; border:1px solid transparent; border-radius:9px; }
+  .pe-back .ln { position:relative; min-height:1.65em; }
+  .pe-back .ln.a { background:rgba(58,91,217,.06); }
+  .pe-back .ln.b { background:rgba(183,121,11,.06); }
+  .pe-back .ln.st { border-top-left-radius:6px; border-top-right-radius:6px; }
+  .pe-back .pno { position:absolute; left:-40px; top:2px; min-width:26px; height:20px; padding:0 5px; border-radius:6px; background:var(--acc); color:#fff;
+                  font-size:11px; font-weight:700; line-height:20px; text-align:center; }
+  .pe-back .ln.b .pno { background:var(--warn); }
+  .pe-back .pad { height:40px; }
+  .pcount { font-size:12px; font-weight:600; color:var(--acc); background:var(--acc-soft); border-radius:20px; padding:1px 10px; }
+  .pcount:empty { display:none; }
+  .optbar { display:flex; flex-wrap:wrap; gap:14px 26px; align-items:center; margin-top:16px; padding:12px 14px; background:var(--soft); border:1px solid var(--line); border-radius:10px; }
+  .og { display:flex; align-items:center; gap:10px; }
+  .ol { font-size:12px; font-weight:600; color:var(--mut); }
+  .ratios, .durs { display:flex; gap:4px; }
+  .ratios button, .durs button { padding:5px 10px; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500; }
+  .ratios button.on, .durs button.on { border-color:var(--acc); background:var(--acc-soft); color:var(--acc); }
+  .stepper { display:flex; align-items:center; border:1px solid var(--line2); border-radius:9px; background:#fff; overflow:hidden; width:110px; }
+  .chk { display:flex; gap:7px; align-items:center; font-size:12px; color:var(--mut); margin-top:10px; cursor:pointer; }
+  .shape { border:1.5px solid currentColor; border-radius:2px; opacity:.7; }
+  .stepper button { border:none; border-radius:0; width:34px; padding:7px 0; }
+  .stepper input { border:none; text-align:center; padding:7px 0; box-shadow:none !important; -moz-appearance:textfield; }
+  .stepper input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .submit { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .submit .sum { flex:1; font-size:13px; color:var(--mut); }
+  .submit .sum b { color:var(--text); }
+  .submit button.primary { padding:10px 22px; font-size:15px; }
+  .warnbox { font-size:12px; background:var(--warn-soft); color:var(--warn); border-radius:8px; padding:8px 10px; margin-top:10px; }
+
+  /* Jobs */
+  .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:14px 16px 12px; border-bottom:1px solid var(--line); }
+  .tabs { display:flex; gap:2px; }
+  .tabs button { border:none; background:transparent; color:var(--mut); padding:5px 11px; border-radius:8px; font-weight:500; }
+  .tabs button.on { background:var(--text); color:#fff; }
+  .tabs button .n { font-size:11px; opacity:.75; margin-left:3px; }
+  .jobs { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; padding:16px; }
+  .job { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; display:flex; flex-direction:column; transition:box-shadow .15s; }
+  .job:hover { box-shadow:0 6px 20px rgba(0,0,0,.07); }
+  .jhead { display:flex; align-items:center; gap:8px; }
+  .jhead .time { margin-left:auto; font-size:11px; color:var(--mut); }
+  .specs { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13px; padding:2px 2px 0; }
+  .specs .k { color:var(--mut); font-size:12px; display:flex; align-items:center; gap:5px; }
+  .specs .v { font-weight:600; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .specs .v small { font-weight:400; color:var(--mut); font-size:12px; margin-left:4px; }
+  .pbox { display:flex; gap:10px; background:var(--soft); border-radius:9px; padding:8px 10px; }
+  .pbox .src { flex:none; display:flex; flex-direction:column; gap:3px; align-items:center; }
+  .pbox .src img { width:52px; height:52px; object-fit:cover; border-radius:7px; border:1px solid var(--line); cursor:zoom-in; display:block; }
+  .pbox .src span { font-size:10px; color:var(--mut); }
+  .pbox .ptxt { min-width:0; flex:1; }
+  .pbox .k { font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); margin-bottom:1px; }
+  .jprompt { font-size:13px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; cursor:pointer; white-space:pre-wrap; }
+  .jprompt.full { -webkit-line-clamp:unset; display:block; }
+  .lightbox { position:fixed; inset:0; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; z-index:25; cursor:zoom-out; }
+  .lightbox.on { display:flex; }
+  .lightbox img { max-width:92vw; max-height:92vh; border-radius:8px; }
+
+  /* Dự án */
+  .projbar { display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .projbar .t { font-size:12px; font-weight:600; color:var(--mut); margin-right:2px; }
+  .proj { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line2); background:#fff; border-radius:20px; padding:6px 14px; font-weight:500; }
+  .proj .n { font-size:11px; color:var(--mut); background:var(--gray-soft); border-radius:10px; padding:0 7px; }
+  .proj.on { background:var(--text); border-color:var(--text); color:#fff; }
+  .proj.on .n { background:rgba(255,255,255,.18); color:#fff; }
+  .proj .live { width:7px; height:7px; border-radius:50%; background:var(--warn); animation:blink 1s infinite; }
+  .proj.add { border-style:dashed; color:var(--mut); }
+  .media { position:relative; aspect-ratio:16/9; background:#16161a; display:grid; place-items:center; overflow:hidden; }
+  .media.img-out { background:#f0f0ec; }
+  .media.img-out > img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; cursor:zoom-in; }
+  .media video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+  .media .st { color:#c9c9d1; font-size:13px; text-align:center; padding:12px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .media.q { background:var(--gray-soft); } .media.q .st { color:var(--mut); }
+  .media.e { background:var(--err-soft); } .media.e .st { color:var(--err); }
+  .spin { width:26px; height:26px; border:3px solid rgba(255,255,255,.18); border-top-color:#fff; border-radius:50%; animation:sp 0.9s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .refs { position:absolute; left:8px; bottom:8px; display:flex; gap:4px; }
+  .refs img { width:30px; height:30px; object-fit:cover; border-radius:5px; border:1.5px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .media .tag { position:absolute; top:8px; left:8px; }
+  /* Thẻ video gọn: lớp phủ trên video */
+  .ov-top { position:absolute; top:0; left:0; right:0; display:flex; align-items:center; gap:6px; padding:10px; z-index:2;
+            background:linear-gradient(rgba(0,0,0,.45), transparent); transition:opacity .15s; }
+  .media.q .ov-top, .media.e .ov-top { background:none; }
+  .ov-top .pill { background:rgba(255,255,255,.92); }
+  .ov-top .acts { margin-left:auto; display:flex; gap:6px; }
+  .ib { width:30px; height:30px; padding:0; border-radius:50%; border:none; background:rgba(0,0,0,.45); color:#fff; display:grid; place-items:center; }
+  .ib:hover { background:rgba(0,0,0,.7); }
+  .media.q .ib, .media.e .ib { background:rgba(0,0,0,.08); color:var(--text); }
+  .media.q .ib:hover, .media.e .ib:hover { background:rgba(0,0,0,.16); }
+  .ib svg { width:16px; height:16px; }
+  .ib.del:hover { background:var(--err); color:#fff; }
+  .play { position:absolute; z-index:2; width:58px; height:58px; border-radius:50%; border:2px solid rgba(255,255,255,.9); background:rgba(0,0,0,.35);
+          color:#fff; display:grid; place-items:center; padding:0; transition:transform .12s, background .12s; }
+  .play:hover { transform:scale(1.07); background:rgba(0,0,0,.55); }
+  .play svg { width:24px; height:24px; margin-left:4px; }
+  .ov-bot { position:absolute; left:0; right:0; bottom:0; z-index:2; display:flex; gap:9px; align-items:flex-end; padding:28px 12px 10px;
+            background:linear-gradient(transparent, rgba(0,0,0,.75)); color:#fff; font-size:12px; line-height:1.4; opacity:0; transition:opacity .15s; pointer-events:none; }
+  .ov-bot img { width:38px; height:38px; object-fit:cover; border-radius:6px; border:1.5px solid #fff; flex:none; }
+  .ov-bot span { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .job:hover .ov-bot { opacity:1; }
+  .job.playing .ov-top, .job.playing .ov-bot, .job.playing .play { opacity:0; pointer-events:none; }
+  .job.playing:hover .ov-top { opacity:1; pointer-events:auto; }
+  .jfoot { display:flex; align-items:center; gap:14px; padding:10px 14px; font-size:13px; }
+  .jfoot .it { display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .jfoot .it svg { width:15px; height:15px; color:var(--mut); }
+  .jfoot .res { color:var(--mut); }
+  .jfoot .rdiff { font-size:11px; color:var(--warn); background:var(--warn-soft); border-radius:6px; padding:0 6px; }
+  .jfoot .ratio-ic { border:1.5px solid var(--mut); border-radius:2px; }
+  .jfoot .sp { flex:1; }
+  .jfoot .accn { max-width:110px; overflow:hidden; text-overflow:ellipsis; }
+  .media .st .err-msg { font-size:12px; max-width:90%; }
+  .detail-img { max-width:160px; max-height:160px; border-radius:8px; border:1px solid var(--line); cursor:zoom-in; }
+  .jb { padding:12px; display:flex; flex-direction:column; gap:9px; flex:1; }
+  .jerr { font-size:12px; color:var(--err); }
+  details.log summary { font-size:11px; color:var(--mut); cursor:pointer; user-select:none; }
+  details.log pre { font-size:11px; line-height:1.5; white-space:pre-wrap; word-break:break-word; margin:6px 0 0; color:var(--mut); background:var(--soft); border-radius:6px; padding:6px 8px; max-height:160px; overflow:auto; }
+  .jacts { display:flex; gap:5px; margin-top:auto; padding-top:2px; flex-wrap:wrap; }
+  .jobs { display:block !important; padding:6px 16px 16px !important; }
+  .grp { margin-top:12px; }
+  .grp-h { display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 4px; border-bottom:1px dashed var(--line2); margin-bottom:12px; color:var(--mut); }
+  .grp-h b { color:var(--text); }
+  .g-time { font-weight:600; color:var(--text); margin-right:4px; }
+  .g-dot { color:var(--line2); }
+  .g-ok { color:var(--ok); } .g-run { color:var(--warn); } .g-q { color:var(--acc); } .g-err { color:var(--err); }
+  .grp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+  .bulk { display:flex; align-items:center; gap:8px; padding:10px 16px; background:var(--acc-soft); border-bottom:1px solid var(--line); font-size:13px; }
+  .selecting .job { cursor:pointer; position:relative; }
+  .selecting .job .ov-top .acts, .selecting .job .play, .selecting .job .ov-bot { display:none; }
+  .selecting .job::after { content:''; position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; border:2px solid #fff; background:rgba(0,0,0,.25); z-index:3; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .selecting .job.sel { outline:3px solid var(--acc); outline-offset:-1px; }
+  .selecting .job.sel::after { background:var(--acc) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/14px no-repeat; }
+  #histPop { position:absolute; z-index:15; width:460px; max-height:420px; display:none; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px rgba(0,0,0,.16); overflow:hidden; }
+  #histPop.on { display:flex; }
+  #histPop .hq { padding:10px; border-bottom:1px solid var(--line); }
+  #histList { overflow:auto; padding:6px; }
+  #histList .hi { display:block; width:100%; text-align:left; border:none; background:none; border-radius:8px; padding:8px 10px; font-size:13px; line-height:1.45; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  #histList .hi:hover { background:var(--acc-soft); }
+  .empty { text-align:center; color:var(--mut); padding:46px 20px; }
+  .empty .big { font-size:34px; margin-bottom:6px; }
+
+  /* Modal + toast */
+  .modal { position:fixed; inset:0; background:rgba(20,20,25,.4); display:none; align-items:center; justify-content:center; z-index:20; padding:20px; }
+  .modal.on { display:flex; }
+  .modal .card { width:580px; max-width:100%; padding:20px; }
+  .modal h3 { margin:0 0 4px; font-size:17px; }
+  .steps { margin:10px 0 0; padding-left:20px; font-size:13px; color:var(--mut); }
+  .steps li { margin:3px 0; }
+  .modal .foot { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+  #toasts { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; z-index:30; }
+  .toast { background:#1c1c1a; color:#fff; padding:9px 16px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.2); animation:tin .2s; }
+  .toast.err { background:var(--err); }
+  @keyframes tin { from { opacity:0; transform:translateY(8px); } }
+
+  @media (max-width: 1050px) { .app { grid-template-columns:200px minmax(0,1fr); } .content { padding:20px; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+<nav class="side">
+  <div class="brand"><span class="logo"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#5b5bd6"/><path d="M40 32 L80 60 L40 88 Z" fill="#fff" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><path d="M94 16 Q96 28 106 30 Q96 32 94 44 Q92 32 82 30 Q92 28 94 16 Z" fill="#ffd166"/><path d="M102 52 Q103 58 108 59 Q103 60 102 66 Q101 60 96 59 Q101 58 102 52 Z" fill="#ffd166"/></svg></span><span class="brand-t">NextTool - Muse AI<small id="verLbl">ver 1.0</small></span></div>
+  <div class="navs">
+    <button class="nav" data-page="accounts" onclick="go('accounts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .7 3.2 2.5 3.8 5.5"/></svg>
+      <span class="nav-lbl">Tài khoản<b class="nb-err" id="nb-accerr" hidden></b></span><span class="badge" id="nb-accounts"></span></button>
+    <button class="nav" data-page="image" onclick="go('image')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="M3.5 18l5.5-5 4 3.5 3-2.5 4.5 4"/></svg>
+      <span>Tạo ảnh</span><span class="badge" id="nb-image"></span></button>
+    <button class="nav" data-page="video" onclick="go('video')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="14" height="14" rx="2.5"/><path d="M16.5 10l5-3v10l-5-3z"/></svg>
+      <span>Tạo video</span><span class="badge" id="nb-video"></span></button>
+    <button class="nav" data-page="settings" onclick="go('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>
+      <span>Cài đặt</span></button>
+  </div>
+  <span class="sp"></span>
+  <div class="upd-box" id="updBox" hidden></div>
+  <div class="side-stats" id="stats"></div>
+  <button class="side-folder" onclick="openFolder()">📁 Thư mục output</button>
+</nav>
+
+<div class="content">
+  <!-- ===== Tạo video ===== -->
+  <section class="page" id="page-video">
+    <div class="page-h"><div><h1>Tạo video</h1><p>Tạo video từ Prompt hoặc từ ảnh, sắp xếp theo dự án.</p></div></div>
+    <div class="noacc" id="noacc-video" hidden></div>
+    <div id="ws-video"></div>
+  </section>
+
+  <!-- ===== Tài khoản ===== -->
+  <section class="page" id="page-accounts">
+    <div class="page-h"><div><h1>Tài khoản</h1><p>Mỗi tài khoản là 1 cookie muse.ai. Các tài khoản chạy song song, mỗi tài khoản 1 video một lúc.</p></div>
+      <div class="page-acts"><button id="checkAllBtn" onclick="checkAll()" title="Kiểm tra cookie và hạn mức của tất cả tài khoản">↻ Kiểm tra tất cả</button>
+      <button class="primary" onclick="openAcc()">+ Thêm tài khoản</button></div></div>
+    <div id="accs"></div>
+  </section>
+
+  <!-- ===== Tạo ảnh ===== -->
+  <section class="page" id="page-image">
+    <div class="page-h"><div><h1>Tạo ảnh</h1><p>Tạo ảnh từ Prompt hoặc từ ảnh tham chiếu, sắp xếp theo dự án.</p></div></div>
+    <div class="noacc" id="noacc-image" hidden></div>
+    <div id="ws-image"></div>
+  </section>
+
+  <!-- ===== Cài đặt ===== -->
+  <section class="page" id="page-settings">
+    <div class="page-h"><div><h1>Cài đặt</h1><p>Áp dụng cho tất cả tài khoản và dự án.</p></div></div>
+    <div class="card set-card">
+      <div class="setrow"><div><div class="st-t">Phiên bản</div><div class="small mut" id="updInfo">…</div></div>
+        <div style="display:flex;gap:8px;flex:none"><button id="updCheckBtn" onclick="checkUpd()">↻ Kiểm tra bản mới</button><button class="primary" id="updApplyBtn" onclick="applyUpd()" hidden>Cập nhật</button></div></div>
+      <div class="setrow"><div><div class="st-t">Hiện trình duyệt khi chạy</div><div class="small mut">Mở cửa sổ Chrome để xem tool thao tác trên muse.ai. Tắt để chạy ngầm (nhẹ máy hơn).</div></div>
+        <label class="switch"><input type="checkbox" id="showBrowser"><span></span></label></div>
+      <div class="setrow"><div><div class="st-t">Thời gian chờ tối đa mỗi lượt tạo</div><div class="small mut">Quá thời gian này mà Muse chưa trả video/ảnh thì báo lỗi (hoặc chuyển tài khoản nếu hết hạn mức).</div></div>
+        <div class="num-unit"><input type="number" id="timeoutMin" min="1" max="60"><span class="small mut">phút</span></div></div>
+      <div class="setrow"><div><div class="st-t">Thư mục lưu video và ảnh</div><div class="small mut">Mỗi dự án một thư mục con trong <code>output/</code>.</div></div>
+        <button onclick="openFolder()">📁 Mở thư mục</button></div>
+      <div class="setrow"><div><div class="st-t">Tự thêm câu lệnh vào đầu prompt</div><div class="small mut">Ghép tỉ lệ và thời lượng đã chọn vào đầu mỗi prompt, VD: <i>“Tạo video dài 10 giây, tỉ lệ 16:9: …”</i>, <i>“Tạo ảnh tỉ lệ 16:9: …”</i>. Tắt nếu muốn gửi nguyên văn prompt cho Muse.</div></div>
+        <label class="switch"><input type="checkbox" id="wrapPrompt"><span></span></label></div>
+      <div class="setrow"><div><div class="st-t">Thông báo khi xong</div><div class="small mut">Hiện thông báo của hệ thống (kèm tiếng) khi mọi video/ảnh của một lượt tạo đã xong.</div></div>
+        <label class="switch"><input type="checkbox" id="notify"><span></span></label></div>
+      <div class="setrow"><div><div class="st-t">Dữ liệu của tool</div><div class="small mut">Cookie, danh sách video và ảnh tham chiếu lưu trong thư mục <code>data/</code> trên máy này.</div></div></div>
+    </div>
+  </section>
+</div>
+</div>
+
+<!-- Modal tài khoản -->
+<div class="modal" id="accModal" onclick="if(event.target===this)closeAcc()">
+  <div class="card">
+    <h3 id="accTitle">Thêm tài khoản</h3>
+    <div class="small mut">Cookie chỉ lưu trên máy này (thư mục <code>data/</code>), không gửi đi đâu khác.</div>
+    <div class="lbl" style="margin-top:14px">Tên gợi nhớ</div>
+    <input type="text" id="accName" placeholder="VD: Tài khoản chính">
+    <div class="lbl">Cách 1 — Đăng nhập trên tool</div>
+    <button id="accLoginBtn" class="login-btn" onclick="loginAcc()">🔑 Đăng nhập muse.ai</button>
+    <div class="small mut" id="accLoginNote">Mở cửa sổ muse.ai để bạn đăng nhập. Đăng nhập xong, tool tự lấy cookie và đóng cửa sổ. Mật khẩu chỉ gõ trên trang muse.ai, tool không lưu.</div>
+    <div class="lbl" style="margin-top:14px">Cách 2 — Dán cookie</div>
+    <textarea id="accCookie" rows="7" placeholder='Dán JSON export từ Cookie-Editor, hoặc chuỗi "name=value; name2=value2"'></textarea>
+    <ol class="steps">
+      <li>Cài tiện ích <b>Cookie-Editor</b> cho Chrome.</li>
+      <li>Mở <b>muse.ai</b> (đã đăng nhập) → bấm biểu tượng Cookie-Editor.</li>
+      <li>Bấm <b>Export</b> → <b>JSON</b> → dán vào ô trên.</li>
+    </ol>
+    <div class="acc-err" id="accMsg"></div>
+    <div class="foot"><button onclick="closeAcc()">Huỷ</button><button class="primary" onclick="saveAcc()">Lưu & kiểm tra</button></div>
+  </div>
+</div>
+
+<div class="modal" id="detailModal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="card">
+    <h3 id="detailTitle">Chi tiết</h3>
+    <div id="detailBody"></div>
+    <div class="foot"><button onclick="$('detailModal').classList.remove('on')">Đóng</button></div>
+  </div>
+</div>
+<div class="modal" id="askModal">
+  <div class="card" style="width:440px">
+    <h3 id="askTitle"></h3>
+    <div class="small mut" id="askMsg" style="white-space:pre-wrap;margin-top:6px"></div>
+    <input type="text" id="askInput" style="margin-top:12px">
+    <div class="foot"><button id="askNo">Huỷ</button><button class="primary" id="askYes">OK</button></div>
+  </div>
+</div>
+<div id="histPop"><div class="hq"><input type="text" id="histQ" placeholder="Tìm trong lịch sử prompt…" oninput="renderHist()"></div><div id="histList"></div></div>
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('on')"><img id="lightImg"></div>
+<div id="toasts"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+let state = { accounts: [], projects: [], jobs: [], settings: {} };
+let editId = null;
+
+const RATIOS = [['16:9',22,13],['9:16',11,19],['1:1',15,15],['4:3',19,14],['3:4',14,19],['','',0]];
+const DURS = [['5','5 giây'],['10','10 giây']];
+
+// ---------- API ----------
+async function api(url, opt = {}) {
+  if (opt.json !== undefined) { opt.body = JSON.stringify(opt.json); opt.headers = { 'Content-Type': 'application/json' }; opt.method = opt.method || 'POST'; }
+  const r = await fetch(url, opt);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  return d;
+}
+const post = (url, json = {}) => api(url, { method: 'POST', json }).catch((e) => toast(e.message, true));
+function toast(msg, err) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (err ? ' err' : '');
+  t.textContent = msg;
+  $('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ---------- Tài khoản ----------
+const ST = {
+  ok: ['ok', 'Sẵn sàng'], busy: ['busy', 'Đang tạo video'], checking: ['checking', 'Đang kiểm tra'],
+  invalid: ['invalid', 'Cookie lỗi'], exhausted: ['exhausted', 'Hết hạn mức'], new: ['new', 'Chưa kiểm tra'], off: ['off', 'Đã tắt'],
+};
+function accState(a) {
+  if (a.status === 'checking') return ST.checking;
+  if (a.running) return ST.busy;
+  if (!a.enabled) return ST.off;
+  return ST[a.status] || ST.new;
+}
+function ago(t) {
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return 'vừa xong';
+  if (s < 3600) return Math.round(s / 60) + ' phút trước';
+  if (s < 86400) return Math.round(s / 3600) + ' giờ trước';
+  return Math.round(s / 86400) + ' ngày trước';
+}
+function renderAccs() {
+  const el = $('accs');
+  if (!state.accounts.length) {
+    el.innerHTML = `<div class="empty-acc">Chưa có tài khoản nào.<br>Bấm <b>+ Thêm</b> để dán cookie muse.ai.</div>`;
+    return;
+  }
+  el.innerHTML = state.accounts.map((a, i) => {
+    const [cls, label] = accState(a);
+    const u = a.usage;
+    let usage = '';
+    if (u && u.planUsed !== undefined) {
+      const lvl = u.planUsed >= 90 ? 'high' : u.planUsed >= 70 ? 'mid' : '';
+      usage = `<div class="usage">
+        <div class="usage-row"><span>${esc(u.plan || 'Hạn mức')}</span><b>${u.planUsed}% đã dùng</b></div>
+        <div class="bar"><i class="${lvl}" style="width:${Math.min(100, Math.max(2, u.planUsed))}%"></i></div>
+        <div class="small mut" title="Cập nhật ${esc(ago(u.checkedAt))}">${esc((u.reset || '').replace(/^Giới hạn hàng tuần sẽ đặt lại vào /, 'Đặt lại vào '))} · đã tạo ${a.done}</div>
+        ${u.extraUsed !== undefined ? `<div class="usage-row" style="margin-top:6px"><span>${esc(u.extraName || 'Token bổ sung')}</span><b>${u.extraUsed}% đã dùng</b></div>
+        <div class="bar"><i class="${u.extraUsed >= 90 ? 'high' : u.extraUsed >= 70 ? 'mid' : ''}" style="width:${Math.min(100, Math.max(2, u.extraUsed))}%"></i></div>
+        ${u.extraLeft ? `<div class="small mut">${esc(u.extraLeft)}</div>` : ''}` : ''}
+      </div>`;
+    } else if (a.status !== 'checking') {
+      usage = `<div class="small mut" style="margin-top:6px">Chưa có thông tin hạn mức — bấm “Kiểm tra”.</div>`;
+    }
+    const err = a.lastError && (a.status === 'invalid' || a.status === 'exhausted' || !u) ? `<div class="acc-err">⚠ ${esc(a.lastError)}</div>` : '';
+    return `<div class="acc ${a.enabled ? '' : 'off'}">
+      <div class="acc-top"><span class="acc-no">${i + 1}</span><span class="acc-name" title="${esc(a.name)}">${esc(a.name)}</span><span class="pill ${cls}">${label}</span></div>
+      ${usage}${err}
+      <div class="acc-acts">
+        <label class="switch" title="${a.enabled ? 'Đang bật — bấm để tạm tắt' : 'Đang tắt — bấm để bật'}"><input type="checkbox" ${a.enabled ? 'checked' : ''} onchange="api('/api/accounts/${a.id}',{method:'PATCH',json:{enabled:this.checked}}).then(refresh)"><span></span></label>
+        <span class="sp"></span>
+        <button class="sm ghost" ${a.busy ? 'disabled' : ''} onclick="post('/api/accounts/${a.id}/check').then(refresh)">↻ Kiểm tra</button>
+        ${a.status === 'invalid' ? `<button class="sm" ${a.busy ? 'disabled' : ''} onclick="loginAcc('${a.id}')">🔑 Đăng nhập lại</button>` : ''}
+        <button class="sm ghost" onclick="openAcc('${a.id}')">Sửa</button>
+        <button class="sm ghost" ${a.busy ? 'disabled' : ''} onclick="delAcc('${a.id}')">Xoá</button>
+      </div></div>`;
+  }).join('');
+}
+function checkAll() { post('/api/accounts/check-all').then(() => { toast('Đang kiểm tra tất cả tài khoản…'); refresh(); }); }
+async function delAcc(id) {
+  const a = state.accounts.find((x) => x.id === id);
+  if (!(await askConfirm(`Xoá tài khoản “${a.name}”?`, 'Cookie của tài khoản này sẽ bị xoá khỏi tool.'))) return;
+  api('/api/accounts/' + id, { method: 'DELETE' }).then(refresh).catch((e) => toast(e.message, true));
+}
+function openAcc(id) {
+  editId = id || null;
+  const a = state.accounts.find((x) => x.id === id);
+  $('accTitle').textContent = a ? 'Sửa tài khoản' : 'Thêm tài khoản';
+  $('accName').value = a ? a.name : '';
+  $('accCookie').value = '';
+  $('accCookie').placeholder = a ? 'Để trống nếu không đổi cookie' : 'Dán JSON export từ Cookie-Editor, hoặc chuỗi "name=value; name2=value2"';
+  $('accMsg').textContent = '';
+  $('accLoginBtn').textContent = a ? '🔑 Đăng nhập lại muse.ai' : '🔑 Đăng nhập muse.ai';
+  $('accModal').classList.add('on');
+  setTimeout(() => $(a ? 'accCookie' : 'accName').focus(), 50);
+}
+function closeAcc() { if (loginWaiting) return toast('Đang chờ đăng nhập — đóng cửa sổ muse.ai để huỷ', true); $('accModal').classList.remove('on'); }
+let loginWaiting = false;
+async function loginAcc(id) {
+  if (loginWaiting) return;
+  const fromModal = id === undefined;
+  if (fromModal) id = editId;
+  loginWaiting = true;
+  const btn = $('accLoginBtn');
+  if (fromModal) { btn.disabled = true; btn.textContent = '⏳ Đang chờ bạn đăng nhập trong cửa sổ muse.ai… (đóng cửa sổ để huỷ)'; $('accMsg').textContent = ''; }
+  else toast('Đã mở cửa sổ muse.ai — đăng nhập xong tool tự lưu');
+  try {
+    await api('/api/accounts/login', { json: { id: id || undefined, name: fromModal ? $('accName').value.trim() : undefined } });
+    loginWaiting = false;
+    if (fromModal) closeAcc();
+    toast('Đăng nhập xong, đang kiểm tra hạn mức…');
+    refresh();
+  } catch (e) {
+    loginWaiting = false;
+    if (fromModal) $('accMsg').textContent = e.message; else toast(e.message, true);
+  } finally {
+    loginWaiting = false;
+    btn.disabled = false; btn.textContent = '🔑 Đăng nhập muse.ai';
+  }
+}
+async function saveAcc() {
+  try {
+    const body = { name: $('accName').value.trim() };
+    if ($('accCookie').value.trim()) body.cookie = $('accCookie').value.trim();
+    if (!editId && !body.cookie) throw new Error('Chưa dán cookie');
+    if (editId) await api('/api/accounts/' + editId, { method: 'PATCH', json: body });
+    else await api('/api/accounts', { json: body });
+    closeAcc();
+    toast(body.cookie ? 'Đã lưu, đang kiểm tra cookie và hạn mức…' : 'Đã lưu');
+    refresh();
+  } catch (e) { $('accMsg').textContent = e.message; }
+}
+
+// ---------- Hộp thoại (thay prompt/confirm của trình duyệt) ----------
+function dialog({ title, msg = '', input, ok = 'OK', danger }) {
+  return new Promise((resolve) => {
+    const m = $('askModal'), inp = $('askInput'), yes = $('askYes'), no = $('askNo');
+    $('askTitle').textContent = title;
+    $('askMsg').textContent = msg;
+    $('askMsg').hidden = !msg;
+    inp.hidden = input === undefined;
+    inp.value = input ?? '';
+    yes.textContent = ok;
+    yes.style.background = danger ? 'var(--err)' : '';
+    yes.style.borderColor = danger ? 'var(--err)' : '';
+    const done = (v) => { m.classList.remove('on'); yes.onclick = no.onclick = inp.onkeydown = m.onclick = null; resolve(v); };
+    yes.onclick = () => done(input === undefined ? true : inp.value.trim());
+    no.onclick = () => done(input === undefined ? false : null);
+    m.onclick = (e) => { if (e.target === m) no.onclick(); };
+    inp.onkeydown = (e) => { if (e.key === 'Enter') yes.onclick(); if (e.key === 'Escape') no.onclick(); };
+    m.classList.add('on');
+    setTimeout(() => (input === undefined ? yes : inp).focus(), 30);
+    if (input !== undefined) setTimeout(() => inp.select(), 40);
+  });
+}
+const askText = (title, value) => dialog({ title, input: value, ok: 'Lưu' });
+const askConfirm = (title, msg, ok = 'Xoá') => dialog({ title, msg, ok, danger: true });
+
+// ---------- Dự án ----------
+let curProject = localStorage.getItem('tm_project') || '';
+const projJobs = (k) => state.jobs.filter((j) => j.projectId === curProject && (j.kind || 'video') === k);
+function ensureProject() {
+  if (!state.projects?.length) return;
+  if (!state.projects.some((p) => p.id === curProject)) setProject(state.projects[state.projects.length - 1].id, true);
+}
+function setProject(id, silent) {
+  curProject = id;
+  localStorage.setItem('tm_project', id);
+  filters.video = filters.image = 'all';
+  if (!silent) { renderAll(true); }
+}
+function renderProjects() {
+  const cur = state.projects.find((p) => p.id === curProject);
+  const html = (k) => `<span class="t">DỰ ÁN</span>` + state.projects.map((p) => {
+    const js = state.jobs.filter((j) => j.projectId === p.id);
+    const live = js.some((j) => (j.kind || 'video') === k && (j.status === 'running' || j.status === 'queued'));
+    const nv = js.filter((j) => j.kind !== 'image' && j.status === 'done').length, ni = js.filter((j) => j.kind === 'image' && j.status === 'done').length;
+    return `<button class="proj ${p.id === curProject ? 'on' : ''}" onclick="setProject('${p.id}')" title="${nv} video · ${ni} ảnh">${live ? '<span class="live"></span>' : ''}${esc(p.name)}<span class="n">${k === 'image' ? ni : nv} ${KIND[k].name}</span></button>`;
+  }).join('') + `<button class="proj add" onclick="newProject()">+ Dự án mới</button>
+    <span class="sp"></span>
+    ${cur ? `<button class="sm ghost" onclick="renameProject()">✎ Đổi tên</button>
+    <button class="sm ghost" onclick="openFolder({projectId:curProject})">📁 Thư mục dự án</button>
+    <button class="sm ghost" onclick="deleteProject()">🗑 Xoá dự án</button>` : ''}`;
+  document.querySelectorAll('.projbar').forEach((el) => { const h = html(el.closest('#page-image') ? 'image' : 'video'); if (el.innerHTML !== h) el.innerHTML = h; });
+  document.querySelectorAll('.createIn').forEach((el) => el.textContent = cur ? `→ lưu vào dự án “${cur.name}”` : '');
+}
+async function newProject() {
+  const name = await askText('Tên dự án mới', `Dự án ${state.projects.length + 1}`);
+  if (name === null) return;
+  try { const p = await api('/api/projects', { json: { name } }); await refresh(); setProject(p.id); toast(`Đã tạo dự án “${p.name}”`); }
+  catch (e) { toast(e.message, true); }
+}
+async function renameProject() {
+  const p = state.projects.find((x) => x.id === curProject);
+  const name = await askText('Đổi tên dự án', p.name);
+  if (!name || name === p.name) return;
+  await api('/api/projects/' + p.id, { method: 'PATCH', json: { name } }).catch((e) => toast(e.message, true));
+  refresh();
+}
+async function deleteProject() {
+  const p = state.projects.find((x) => x.id === curProject);
+  if (!(await askConfirm(`Xoá dự án “${p.name}”?`, 'Dự án và danh sách của nó sẽ bị bỏ khỏi tool.\nFile video/ảnh đã tải vẫn còn trong thư mục output.'))) return;
+  try { await api('/api/projects/' + p.id, { method: 'DELETE' }); curProject = ''; await refresh(); }
+  catch (e) { toast(e.message, true); }
+}
+
+// ---------- Khu làm việc dùng chung cho Tạo video / Tạo ảnh ----------
+const KIND = {
+  video: { name: 'video', icon: '🎬', countLbl: 'Số bản', durations: true,
+    ph: 'Chú mèo cam ngủ trên bậu cửa sổ, nắng chiều chiếu vào.&#10;Rèm cửa bay nhẹ theo gió.&#10;&#10;Flycam bay chậm qua thành phố về đêm, không cắt cảnh.&#10;&#10;Sóng biển vỗ vào ghềnh đá, quay chậm',
+    common: 'VD: máy quay tiến chậm về phía trước, chuyển động tự nhiên', wrapTxt: '“Tạo video dài …, tỉ lệ …:”' },
+  image: { name: 'ảnh', icon: '🖼️', countLbl: 'Số ảnh', durations: false,
+    ph: 'Ngọn hải đăng trên vách đá lúc bình minh, phong cách tranh màu nước.&#10;&#10;Chân dung cô gái đội mũ rơm giữa cánh đồng hoa hướng dương, ánh nắng chiều.&#10;&#10;Quán cà phê nhỏ ở Hà Nội ngày mưa, phong cách anime',
+    common: 'VD: chuyển sang phong cách tranh sơn dầu, giữ nguyên bố cục', wrapTxt: '“Tạo ảnh tỉ lệ …:”' },
+};
+const wsForms = {
+  video: { src: 'text', ratio: '16:9', duration: '10', images: [] },
+  image: { src: 'text', ratio: '16:9', duration: '', images: [] },
+};
+const filters = { video: 'all', image: 'all' };
+const E = (k, id) => document.getElementById(`${k}-${id}`);
+
+function workspaceHTML(k) {
+  const K = KIND[k];
+  return `
+    <div class="projbar"></div>
+    <section class="card" style="margin-bottom:20px">
+      <div class="card-h"><h2>Tạo ${K.name} mới</h2><span class="small mut createIn"></span><span class="sp"></span>
+        <div class="seg sm" id="${k}-srcSeg">
+          <button data-v="text" class="on">✍️ Từ Prompt</button>
+          <button data-v="image">🖼️ Từ ảnh</button>
+        </div>
+        <button class="sm ghost" id="${k}-fold" onclick="toggleForm('${k}')" title="Thu gọn / mở rộng khung tạo">▲ Thu gọn</button></div>
+      <div class="card-b" id="${k}-formBody">
+        <div id="${k}-textMode">
+          <div class="lbl" style="justify-content:space-between">
+            <span>Viết prompt <span class="mut" style="font-weight:400">— để 1 dòng trống giữa các prompt, mỗi prompt là 1 ${K.name}</span></span>
+            <span style="display:flex;gap:8px;align-items:center"><span class="pcount" id="${k}-pcount"></span>
+              <button class="sm ghost" onclick="openHist('${k}', event)">🕘 Lịch sử prompt</button></span></div>
+          <div class="pe-wrap">
+            <div class="pe-back" id="${k}-back"></div>
+            <textarea class="pe-ta" id="${k}-textPrompts" spellcheck="false" placeholder="${K.ph}"></textarea>
+          </div>
+        </div>
+        <div id="${k}-imageMode" hidden>
+          <div class="drop" id="${k}-drop"></div>
+          <input type="file" id="${k}-fileIn" accept="image/*" multiple hidden>
+          <div id="${k}-imgArea" hidden>
+            <div class="lbl" style="justify-content:space-between"><span>Prompt chung <span class="mut" style="font-weight:400">— dùng cho mọi ảnh chưa có Prompt riêng</span></span>
+              <button class="sm ghost" onclick="openHist('${k}', event)">🕘 Lịch sử prompt</button></div>
+            <textarea id="${k}-commonPrompt" rows="2" placeholder="${K.common}"></textarea>
+            <div class="lbl" style="justify-content:space-between">Mỗi ảnh tạo 1 ${K.name} — ghi Prompt riêng nếu muốn khác Prompt chung
+              <button class="sm ghost" onclick="clearImages('${k}')">Xoá hết ảnh</button></div>
+            <div class="imgs" id="${k}-imgsEach"></div>
+          </div>
+        </div>
+        <div class="optbar">
+          <div class="og"><span class="ol">Tỉ lệ</span><div class="ratios" id="${k}-ratios"></div></div>
+          ${K.durations ? `<div class="og"><span class="ol">Thời lượng</span><div class="durs" id="${k}-durs"></div></div>` : ''}
+          <div class="og"><span class="ol">${K.countLbl}</span><div class="stepper"><button onclick="step('${k}',-1)">−</button><input type="number" id="${k}-count" value="1" min="1" max="20"><button onclick="step('${k}',1)">+</button></div></div>
+        </div>
+        <div class="submit">
+          <div class="sum" id="${k}-sum"></div>
+          <button class="primary" id="${k}-goBtn" onclick="submitJobs('${k}')">Tạo ${K.name}</button>
+        </div><div id="${k}-formWarn"></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="toolbar">
+        <div class="tabs" id="${k}-tabs"></div>
+        <span class="sp"></span>
+        <button class="sm" id="${k}-selBtn" onclick="toggleSelect('${k}')">☑ Chọn nhiều</button>
+        <button class="sm" id="${k}-retryErrBtn" onclick="post('/api/jobs/retry-errors',{projectId:curProject}).then(refresh)">↻ Thử lại các mục lỗi</button>
+        <button class="sm" onclick="clearJobs('${k}')">🧹 Dọn danh sách</button>
+      </div>
+      <div class="bulk" id="${k}-bulk" hidden>
+        <span>Đã chọn <b id="${k}-selN">0</b></span>
+        <button class="sm" onclick="selAll('${k}')">Chọn tất cả</button>
+        <button class="sm" onclick="selClear('${k}')">Bỏ chọn</button>
+        <span class="sp"></span>
+        <button class="sm primary" onclick="zipSel('${k}')">⬇ Tải về (.zip)</button>
+        <button class="sm" onclick="delSel('${k}')">🗑 Xoá khỏi danh sách</button>
+      </div>
+      <div class="jobs" id="${k}-jobs"></div>
+      <div class="empty" id="${k}-empty"></div>
+    </section>`;
+}
+
+function initWorkspace(k) {
+  $(`ws-${k}`).innerHTML = workspaceHTML(k);
+  E(k, 'srcSeg').querySelectorAll('button').forEach((b) => b.onclick = () => setSrc(k, b.dataset.v));
+  const drop = E(k, 'drop');
+  drop.onclick = () => E(k, 'fileIn').click();
+  E(k, 'fileIn').onchange = () => { addFiles(k, E(k, 'fileIn').files); E(k, 'fileIn').value = ''; };
+  ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => addFiles(k, e.dataTransfer.files));
+  ['textPrompts', 'commonPrompt', 'count'].forEach((id) => E(k, id).addEventListener('input', () => renderSum(k)));
+  const ta = E(k, 'textPrompts');
+  ta.addEventListener('scroll', () => { E(k, 'back').scrollTop = ta.scrollTop; });
+  new ResizeObserver(() => { E(k, 'back').style.height = ta.offsetHeight + 'px'; E(k, 'back').scrollTop = ta.scrollTop; }).observe(ta);
+  renderOpts(k);
+  renderForm(k);
+  E(k, 'jobs').addEventListener('click', (e) => {
+    if (!selMode[k]) return;
+    const card = e.target.closest('.job');
+    if (!card) return;
+    e.preventDefault(); e.stopPropagation();
+    const j = state.jobs.find((x) => x.id === card.dataset.id);
+    if (!j || j.status === 'running') return toast('Mục đang tạo, chưa chọn được');
+    sel[k].has(j.id) ? sel[k].delete(j.id) : sel[k].add(j.id);
+    paintSel(k);
+  }, true);
+  if (localStorage.getItem('tm_fold_' + k)) toggleForm(k, true);
+}
+function setSrc(k, v) {
+  wsForms[k].src = v;
+  E(k, 'srcSeg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.v === v));
+  renderForm(k);
+}
+function renderOpts(k) {
+  const f = wsForms[k];
+  E(k, 'ratios').innerHTML = RATIOS.map(([r, w, h]) => `<button class="${f.ratio === r ? 'on' : ''}" onclick="wsForms.${k}.ratio='${r}';renderOpts('${k}');renderSum('${k}')">
+    ${r ? `<span class="shape" style="width:${Math.round(w * .65)}px;height:${Math.round(h * .65)}px"></span>${r}` : `✨ Tự động`}</button>`).join('');
+  if (KIND[k].durations) E(k, 'durs').innerHTML = DURS.map(([v, l]) => `<button class="${f.duration === v ? 'on' : ''}" onclick="wsForms.${k}.duration='${v}';renderOpts('${k}');renderSum('${k}')">⏱ ${l}</button>`).join('');
+}
+function step(k, d) { const c = E(k, 'count'); c.value = Math.max(1, Math.min(20, (+c.value || 1) + d)); renderSum(k); }
+// Các prompt cách nhau bằng dòng trống; 1 prompt có thể viết nhiều dòng.
+const splitPrompts = (s) => s.split(/\n\s*\n/).map((x) => x.split('\n').map((l) => l.trim()).filter(Boolean).join('\n')).filter(Boolean);
+
+function addFiles(k, files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    const im = { file: f, url: URL.createObjectURL(f), prompt: '' };
+    wsForms[k].images.push(im);
+    const probe = new Image();
+    probe.onload = () => { im.w = probe.naturalWidth; im.h = probe.naturalHeight; renderSum(k); };
+    probe.src = im.url;
+  }
+  renderForm(k);
+}
+function removeImg(k, i) { URL.revokeObjectURL(wsForms[k].images[i].url); wsForms[k].images.splice(i, 1); renderForm(k); }
+function clearImages(k) { wsForms[k].images.forEach((x) => URL.revokeObjectURL(x.url)); wsForms[k].images = []; renderForm(k); }
+
+function renderForm(k) {
+  const f = wsForms[k], name = KIND[k].name;
+  E(k, 'textMode').hidden = f.src !== 'text';
+  E(k, 'imageMode').hidden = f.src !== 'image';
+  const has = f.images.length > 0;
+  E(k, 'imgArea').hidden = !has;
+  E(k, 'drop').innerHTML = has ? `➕ Thêm ảnh (đang có ${f.images.length} ảnh)` : `⬆️ Kéo thả ảnh vào đây hoặc <b>bấm để chọn</b> — chọn được nhiều ảnh, mỗi ảnh tạo 1 ${name}`;
+  E(k, 'imgsEach').innerHTML = f.images.map((im, i) => `<div class="img"><img src="${im.url}"><span class="no">${i + 1}</span>
+    <button class="x" onclick="removeImg('${k}',${i})" title="Bỏ ảnh">×</button>
+    <textarea placeholder="Prompt riêng (để trống = dùng Prompt chung)" oninput="wsForms.${k}.images[${i}].prompt=this.value;renderSum('${k}')">${esc(im.prompt)}</textarea></div>`).join('');
+  renderSum(k);
+}
+
+// Danh sách sẽ tạo: [{prompt, images:[chỉ số ảnh]}]
+function buildItems(k) {
+  const f = wsForms[k];
+  if (f.src === 'text') return { items: splitPrompts(E(k, 'textPrompts').value).map((p) => ({ prompt: p, images: [] })), missing: [] };
+  if (!f.images.length) return { items: [], missing: [], noImg: true };
+  const common = E(k, 'commonPrompt').value.trim();
+  const missing = [];
+  const items = f.images.map((im, i) => {
+    const p = im.prompt.trim() || common;
+    if (!p) missing.push(i + 1);
+    return { prompt: p, images: [i] };
+  });
+  return { items: items.filter((x) => x.prompt), missing };
+}
+// Vẽ lớp nền dưới ô nhập: tô từng prompt và gắn số thứ tự vào dòng đầu.
+function renderEditor(k, count) {
+  const ta = E(k, 'textPrompts'), back = E(k, 'back');
+  let n = 0, inP = false;
+  const html = ta.value.split('\n').map((line) => {
+    if (!line.trim()) { inP = false; return `<div class="ln">${esc(line) || '&nbsp;'}</div>`; }
+    const st = !inP;
+    if (st) n++;
+    inP = true;
+    return `<div class="ln ${n % 2 ? 'a' : 'b'}${st ? ' st' : ''}">${st ? `<span class="pno">${n}</span>` : ''}${esc(line)}</div>`;
+  }).join('');
+  back.innerHTML = html + '<div class="pad"></div>';
+  back.scrollTop = ta.scrollTop;
+  E(k, 'pcount').textContent = n ? `${n} prompt${count > 1 ? ` × ${count} = ${n * count} ${KIND[k].name}` : ''}` : '';
+}
+function renderSum(k) {
+  const f = wsForms[k], name = KIND[k].name;
+  const { items, missing, noImg } = buildItems(k);
+  const count = Math.max(1, +E(k, 'count').value || 1);
+  renderEditor(k, count);
+  const n = items.length * count;
+  const opt = [f.ratio || 'tỉ lệ tự động', KIND[k].durations ? f.duration + ' giây' : ''].filter(Boolean).join(' · ');
+  E(k, 'sum').innerHTML = n ? `Sẽ tạo <b>${n} ${name}</b>${count > 1 ? ` (${items.length} × ${count})` : ''} · ${opt}` : `<span class="mut">${noImg ? 'Chưa chọn ảnh nào' : 'Chưa có Prompt nào'}</span>`;
+  E(k, 'goBtn').textContent = n ? `Tạo ${n} ${name}` : `Tạo ${name}`;
+  E(k, 'goBtn').disabled = !n;
+  const warn = [];
+  if (k === 'video' && f.src === 'image' && f.ratio) {
+    const off = f.images.map((im, i) => (im.w && nearRatio(im.w, im.h) !== f.ratio ? `số ${i + 1} (${nearRatio(im.w, im.h)})` : null)).filter(Boolean);
+    if (off.length) warn.push(`Ảnh ${off.join(', ')} khác tỉ lệ ${f.ratio} đã chọn — khi tạo video từ ảnh, Muse giữ tỉ lệ của ảnh gốc nên video có thể không ra ${f.ratio}.`);
+  }
+  if (missing && missing.length) warn.push(`Ảnh số ${missing.join(', ')} chưa có Prompt — nhập Prompt riêng hoặc Prompt chung, nếu không các ảnh này sẽ bị bỏ qua.`);
+  if (n && !state.accounts.some((a) => a.enabled && a.status !== 'invalid')) warn.push(`Chưa có tài khoản nào dùng được — ${name} sẽ nằm chờ cho tới khi thêm tài khoản.`);
+  E(k, 'formWarn').innerHTML = warn.map((w) => `<div class="warnbox">${esc(w)}</div>`).join('');
+}
+
+async function submitJobs(k) {
+  const f = wsForms[k];
+  const { items } = buildItems(k);
+  if (!items.length) return;
+  const used = [...new Set(items.flatMap((x) => x.images))].sort((a, b) => a - b);
+  const remap = new Map(used.map((i, n) => [i, n]));
+  const fd = new FormData();
+  fd.append('kind', k);
+  fd.append('projectId', curProject);
+  fd.append('items', JSON.stringify(items.map((x) => ({ prompt: x.prompt, images: x.images.map((i) => remap.get(i)) }))));
+  used.forEach((i) => fd.append('images', f.images[i].file));
+  fd.append('ratio', f.ratio);
+  fd.append('duration', f.duration);
+  fd.append('count', E(k, 'count').value);
+  E(k, 'goBtn').disabled = true;
+  try {
+    const r = await api('/api/jobs', { method: 'POST', body: fd });
+    toast(`Đã thêm ${r.created} ${KIND[k].name} vào hàng chờ`);
+    if (f.src === 'text') E(k, 'textPrompts').value = '';
+    else { clearImages(k); E(k, 'commonPrompt').value = ''; }
+    filters[k] = 'all';
+    await refresh();
+    E(k, 'tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { toast(e.message, true); }
+  renderSum(k);
+}
+
+// Thu gọn / mở khung tạo (nhớ theo từng trang).
+function toggleForm(k, force) {
+  const folded = force !== undefined ? force : !E(k, 'formBody').hidden;
+  E(k, 'formBody').hidden = folded;
+  E(k, 'fold').textContent = folded ? '▼ Mở rộng' : '▲ Thu gọn';
+  localStorage.setItem('tm_fold_' + k, folded ? '1' : '');
+}
+
+// Lịch sử prompt: bấm để chèn lại vào ô nhập.
+let histKind = 'video';
+function openHist(k, e) {
+  e.stopPropagation();
+  histKind = k;
+  const pop = $('histPop'), r = e.currentTarget.getBoundingClientRect();
+  pop.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  pop.style.left = Math.max(12, r.right + window.scrollX - 460) + 'px';
+  $('histQ').value = '';
+  renderHist();
+  pop.classList.add('on');
+  setTimeout(() => $('histQ').focus(), 30);
+}
+function renderHist() {
+  const q = $('histQ').value.trim().toLowerCase();
+  const list = (state.history?.[histKind] || []).filter((p) => !q || p.toLowerCase().includes(q));
+  $('histList').innerHTML = list.length
+    ? list.slice(0, 100).map((p, i) => `<button class="hi" onclick="useHist(${(state.history[histKind]).indexOf(p)})" title="Bấm để chèn">${esc(p)}</button>`).join('')
+    : `<div class="mut small" style="padding:16px;text-align:center">${q ? 'Không tìm thấy' : 'Chưa có Prompt nào — prompt sẽ được lưu lại sau mỗi lần bấm Tạo.'}</div>`;
+}
+function useHist(i) {
+  const k = histKind, p = state.history[k][i];
+  if (wsForms[k].src === 'image') E(k, 'commonPrompt').value = p;
+  else { const t = E(k, 'textPrompts'); t.value = t.value.trim() ? t.value.replace(/\s+$/, '') + '\n\n' + p : p; }
+  renderSum(k);
+  toast('Đã chèn prompt');
+}
+document.addEventListener('click', (e) => { if (!e.target.closest('#histPop')) $('histPop').classList.remove('on'); });
+
+// Chọn nhiều để tải zip / xoá hàng loạt.
+const sel = { video: new Set(), image: new Set() };
+const selMode = { video: false, image: false };
+function toggleSelect(k) {
+  selMode[k] = !selMode[k];
+  if (!selMode[k]) sel[k].clear();
+  E(k, 'selBtn').textContent = selMode[k] ? '✕ Thoát chọn' : '☑ Chọn nhiều';
+  renderJobs(k, true);
+}
+function paintSel(k) {
+  E(k, 'jobs').classList.toggle('selecting', selMode[k]);
+  E(k, 'jobs').querySelectorAll('.job').forEach((el) => el.classList.toggle('sel', sel[k].has(el.dataset.id)));
+  E(k, 'bulk').hidden = !selMode[k];
+  E(k, 'selN').textContent = sel[k].size;
+}
+function selAll(k) { visibleJobs(k).filter((j) => j.status !== 'running').forEach((j) => sel[k].add(j.id)); paintSel(k); }
+function selClear(k) { sel[k].clear(); paintSel(k); }
+function selBatch(k, b) {
+  const ids = visibleJobs(k).filter((j) => j.batch === b && j.status !== 'running').map((j) => j.id);
+  const all = ids.every((id) => sel[k].has(id));
+  ids.forEach((id) => (all ? sel[k].delete(id) : sel[k].add(id)));
+  paintSel(k);
+}
+async function downloadZip(ids) {
+  if (!ids.length) return toast('Chưa có file nào đã xong để tải', true);
+  toast(`Đang nén ${ids.length} file…`);
+  try {
+    const r = await fetch('/api/jobs/zip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Lỗi tải');
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement('a');
+    a.href = url; a.download = `NextTool-${ids.length}-file.zip`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) { toast(e.message, true); }
+}
+function zipSel(k) { downloadZip([...sel[k]].filter((id) => state.jobs.find((j) => j.id === id)?.file)); }
+function zipBatch(k, b) { downloadZip(projJobs(k).filter((j) => j.batch === b && j.file).map((j) => j.id)); }
+async function delSel(k) {
+  const ids = [...sel[k]];
+  if (!ids.length) return toast('Chưa chọn mục nào');
+  if (!(await askConfirm(`Xoá ${ids.length} mục khỏi danh sách?`, 'File đã tải vẫn còn trong thư mục output.'))) return;
+  await api('/api/jobs/delete', { json: { ids } }).catch((e) => toast(e.message, true));
+  sel[k].clear();
+  refresh();
+}
+
+// Lấy ảnh vừa tạo đưa sang trang Tạo video (chế độ Từ ảnh).
+async function toVideo(id) {
+  const j = state.jobs.find((x) => x.id === id);
+  if (!j?.file) return;
+  const blob = await (await fetch(fileUrl(j))).blob();
+  addFiles('video', [new File([blob], j.file, { type: blob.type || 'image/webp' })]);
+  setSrc('video', 'image');
+  go('video');
+  toast('Đã thêm ảnh vào Tạo video — nhập Prompt rồi bấm Tạo');
+}
+
+// ---------- Kho video / ảnh ----------
+const JS = { queued: 'Đang chờ', running: 'Đang tạo', done: 'Hoàn thành', error: 'Lỗi' };
+const JCLS = { queued: 'new', running: 'busy', done: 'ok', error: 'invalid' };
+function renderTabs(k) {
+  const pj = projJobs(k);
+  const c = (s) => pj.filter((j) => j.status === s).length;
+  const tabs = [['all', 'Tất cả', pj.length], ['active', 'Đang xử lý', c('queued') + c('running')], ['done', 'Hoàn thành', c('done')], ['error', 'Lỗi', c('error')]];
+  E(k, 'tabs').innerHTML = tabs.map(([f, l, n]) => `<button class="${filters[k] === f ? 'on' : ''}" onclick="filters.${k}='${f}';renderTabs('${k}');renderJobs('${k}',true)">${l}<span class="n">${n}</span></button>`).join('');
+  E(k, 'retryErrBtn').hidden = !c('error');
+}
+const fmtVer = (v) => { const [a = 0, b = 0, c = 0] = String(v || '').split('.'); return +c ? `${a}.${b}.${c}` : `${a}.${b}`; };
+function renderUpdate() {
+  const u = state.update; if (!u) return;
+  $('verLbl').textContent = 'ver ' + fmtVer(u.current);
+  const box = $('updBox');
+  box.hidden = !u.available;
+  if (u.available) box.innerHTML = `<b>Có bản mới ${esc(fmtVer(u.latest))}</b><br><span class="mut">Bạn đang dùng ${esc(fmtVer(u.current))}</span>${u.notes ? `<div class="mut" style="margin-top:4px">${esc(u.notes)}</div>` : ''}<button class="primary sm" onclick="applyUpd()" ${u.busy ? 'disabled' : ''}>${u.busy ? 'Đang cập nhật…' : 'Cập nhật ngay'}</button>`;
+  $('updInfo').textContent = `Đang dùng ${fmtVer(u.current)}` + (u.error ? ` · ${u.error}` : u.latest ? (u.available ? ` · có bản mới ${fmtVer(u.latest)}` : ' · đã là bản mới nhất') : '') + (u.checkedAt ? ` · kiểm tra ${ago(u.checkedAt)}` : '');
+  $('updApplyBtn').hidden = !u.available;
+}
+async function checkUpd() {
+  $('updCheckBtn').disabled = true;
+  try { state.update = await api('/api/update?force=1'); renderUpdate(); toast(state.update.error || (state.update.available ? 'Có bản mới ' + fmtVer(state.update.latest) : 'Đã là bản mới nhất'), !!state.update.error); }
+  catch (e) { toast(e.message, true); }
+  finally { $('updCheckBtn').disabled = false; }
+}
+async function applyUpd() {
+  const u = state.update;
+  if (!(await askConfirm(`Cập nhật lên bản ${fmtVer(u.latest)}?`, 'Tool sẽ tải bản mới từ GitHub và tự khởi động lại. Tài khoản, cookie, dự án và video/ảnh đã tạo được giữ nguyên.'))) return;
+  toast('Đang tải bản mới…');
+  try {
+    const r = await api('/api/update/apply', { json: {} });
+    if (r.restarting) {
+      toast(`Đã cập nhật lên ${fmtVer(r.version)} — đang khởi động lại…`);
+      const t0 = Date.now();
+      const wait = async () => {
+        await new Promise((ok) => setTimeout(ok, 1500));
+        try { const x = await fetch('/api/update'); if (x.ok && (await x.json()).current === r.version) return location.reload(); } catch {}
+        if (Date.now() - t0 < 60000) wait(); else toast('Khởi động lại lâu quá — hãy mở lại tool', true);
+      };
+      wait();
+    } else {
+      toast(`Đã cập nhật lên ${fmtVer(r.version)} — hãy tắt tool và mở lại để dùng bản mới`);
+      refresh();
+    }
+  } catch (e) { toast('Cập nhật lỗi: ' + e.message, true); }
+}
+function renderStats() {
+  const all = state.jobs, ca = (s) => all.filter((j) => j.status === s).length;
+  const s = [];
+  if (ca('running') || ca('queued')) s.push(`<span class="chip run">⏳ <b>${ca('running')}</b> đang tạo · ${ca('queued')} chờ</span>`);
+  if (ca('error')) s.push(`<span class="chip err">⚠ <b>${ca('error')}</b> lỗi</span>`);
+  $('stats').innerHTML = s.join('');
+}
+const fmtTime = (t) => { const d = new Date(t); return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }); };
+const fileUrl = (j) => '/output/' + [j.dir, j.file].filter(Boolean).map(encodeURIComponent).join('/');
+function jobSig(j, pos) { return [j.status, j.logs?.length, j.accountName, j.error, j.file, pos].join('|'); }
+const ICON = {
+  del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  redo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+  film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="14" height="14" rx="2.5"/><path d="M16.5 10l5-3v10l-5-3z"/></svg>',
+};
+const RSHAPE = { '16:9': [18, 10], '9:16': [10, 18], '1:1': [14, 14], '4:3': [16, 12], '3:4': [12, 16] };
+function jobHTML(j, pos) {
+  const isImg = j.kind === 'image', name = isImg ? 'ảnh' : 'video';
+  const img = j.images?.[0];
+  const imgUrl = img ? `/uploads/${encodeURIComponent(img.file)}` : '';
+  const ib = (cls, icon, title, on) => `<button class="ib ${cls}" title="${title}" onclick="${on}">${ICON[icon]}</button>`;
+  const acts = [];
+  if (j.status !== 'running') acts.push(ib('del', 'del', `Xoá khỏi danh sách (file ${name} vẫn giữ)`, `delJob('${j.id}')`));
+  if (j.status === 'done') {
+    acts.push(`<a href="${fileUrl(j)}" download>${ib('', 'dl', `Tải ${name}`, '')}</a>`);
+    acts.push(ib('', 'folder', state.platform === 'win32' ? 'Mở trong File Explorer' : state.platform === 'darwin' ? 'Mở trong Finder' : 'Mở thư mục', `openFolder({jobId:'${j.id}'})`));
+    if (isImg) acts.push(ib('', 'film', 'Tạo video từ ảnh này', `toVideo('${j.id}')`));
+    acts.push(ib('', 'redo', 'Tạo thêm 1 bản với cùng Prompt và ảnh', `retry('${j.id}')`));
+  }
+  if (j.status === 'error') acts.push(ib('', 'redo', 'Thử lại', `retry('${j.id}')`));
+  acts.push(ib('', 'info', 'Xem chi tiết: prompt, ảnh gốc, nhật ký', `showDetail('${j.id}')`));
+  const top = `<div class="ov-top"><span class="pill ${JCLS[j.status]}">${JS[j.status]}</span><div class="acts">${acts.join('')}</div></div>`;
+  const bot = `<div class="ov-bot">${img ? `<img src="${imgUrl}">` : ''}<span>${esc(j.prompt)}</span></div>`;
+  let media;
+  if (j.status === 'done' && isImg) media = `<div class="media img-out"><img src="${fileUrl(j)}" loading="lazy" onload="showRes(this,'${j.id}')" onclick="zoom(this.src)" title="Bấm để xem lớn">${top}${bot}</div>`;
+  else if (j.status === 'done') media = `<div class="media"><video src="${fileUrl(j)}#t=0.5" preload="metadata" playsinline onloadedmetadata="showRes(this,'${j.id}')"></video>
+      ${top}<button class="play" title="Phát" onclick="playVid(this)">${ICON.play}</button>${bot}</div>`;
+  else if (j.status === 'running') media = `<div class="media">${top}<div class="st"><div class="spin"></div><div>Muse đang tạo ${name}…</div><div class="small" data-since="${j.startedAt}"></div></div>${bot}</div>`;
+  else if (j.status === 'queued') media = `<div class="media q">${top}<div class="st">🕒 Đang chờ tài khoản rảnh<div class="small">Thứ tự ${pos} trong hàng chờ</div></div>${bot}</div>`;
+  else media = `<div class="media e">${top}<div class="st">⚠️ Không tạo được ${name}<div class="err-msg">${esc(j.error || '')}</div></div>${bot}</div>`;
+  const [rw, rh] = RSHAPE[j.ratio] || [14, 14];
+  return `<div class="job" data-id="${j.id}">${media}
+    <div class="jfoot">
+      <span class="it" data-rbox="${j.id}"><span class="ratio-ic" style="width:${rw}px;height:${rh}px"></span><b>${esc(j.ratio || 'Tự động')}</b><span class="res" data-res="${j.id}"></span></span>
+      <span class="sp"></span>
+      ${isImg ? '' : `<span class="it" title="Thời lượng">${ICON.clock}${j.duration ? esc(j.duration) + 's' : '—'}</span>`}
+      <span class="it" title="Tạo bằng tài khoản">${ICON.user}<span class="accn">${esc(j.accountName || '—')}</span></span>
+    </div></div>`;
+}
+// Tỉ lệ gần nhất với kích thước thật (VD 704×1264 → 9:16).
+function nearRatio(w, h) {
+  let best = null, d = Infinity;
+  for (const r of Object.keys(RSHAPE)) {
+    const [a, b] = r.split(':').map(Number), x = Math.abs(Math.log((w / h) / (a / b)));
+    if (x < d) { d = x; best = r; }
+  }
+  return best;
+}
+// Hiện kích thước thật; nếu tỉ lệ thật khác tỉ lệ đã chọn thì hiện tỉ lệ thật.
+function showRes(m, id) {
+  const w = m.videoWidth || m.naturalWidth, h = m.videoHeight || m.naturalHeight;
+  const el = document.querySelector(`[data-res="${id}"]`);
+  if (!el || !w) return;
+  el.textContent = `${w}×${h}`;
+  const j = state.jobs.find((x) => x.id === id), real = nearRatio(w, h), box = document.querySelector(`[data-rbox="${id}"]`);
+  if (!box) return;
+  const [rw, rh] = RSHAPE[real];
+  box.querySelector('.ratio-ic').style.cssText = `width:${rw}px;height:${rh}px`;
+  box.querySelector('b').textContent = real;
+  box.title = j?.ratio && j.ratio !== real ? `Đã chọn ${j.ratio}, Muse trả về ${real} (giữ theo tỉ lệ ảnh gốc)` : '';
+  if (j?.ratio && j.ratio !== real && !box.querySelector('.rdiff')) box.insertAdjacentHTML('beforeend', `<span class="rdiff">chọn ${esc(j.ratio)}</span>`);
+}
+function playVid(btn) {
+  const card = btn.closest('.job'), v = card.querySelector('video');
+  v.controls = true;
+  card.classList.add('playing');
+  v.play();
+}
+function showDetail(id) {
+  const j = state.jobs.find((x) => x.id === id);
+  if (!j) return;
+  const isImg = j.kind === 'image';
+  const took = j.startedAt && j.finishedAt ? Math.round((j.finishedAt - j.startedAt) / 1000) + ' giây' : '—';
+  $('detailTitle').textContent = isImg ? 'Chi tiết ảnh' : 'Chi tiết video';
+  $('detailBody').innerHTML = `
+    <div class="lbl">Prompt</div><div style="white-space:pre-wrap">${esc(j.prompt)}</div>
+    ${j.images?.length ? `<div class="lbl">Ảnh gốc</div>${j.images.map((i) => `<img class="detail-img" src="/uploads/${encodeURIComponent(i.file)}" onclick="zoom(this.src)">`).join(' ')}` : ''}
+    <div class="lbl">Thông tin</div>
+    <div class="small">Trạng thái: <b>${JS[j.status]}</b> · Tài khoản: <b>${esc(j.accountName || '—')}</b> · Tỉ lệ: <b>${esc(j.ratio || 'Tự động')}</b>${isImg ? '' : ` · Thời lượng: <b>${esc(j.duration || '—')}s</b>`}<br>
+    Tạo lúc ${fmtTime(j.createdAt)} · thời gian tạo: ${took}${j.file ? `<br>File: <code>${esc([j.dir, j.file].filter(Boolean).join('/'))}</code>` : ''}</div>
+    ${j.error ? `<div class="acc-err">⚠ ${esc(j.error)}</div>` : ''}
+    ${j.logs?.length ? `<div class="lbl">Nhật ký</div><pre style="font-size:12px;white-space:pre-wrap;background:var(--soft);border-radius:8px;padding:8px 10px;max-height:220px;overflow:auto;margin:0">${esc(j.logs.join('\n'))}</pre>` : ''}`;
+  $('detailModal').classList.add('on');
+}
+function zoom(src) { $('lightImg').src = src; $('lightbox').classList.add('on'); }
+function visibleJobs(k) {
+  return projJobs(k).filter((j) => filters[k] === 'all' || (filters[k] === 'active' ? ['queued', 'running'].includes(j.status) : j.status === filters[k]));
+}
+function batchHead(k, b, js) {
+  const all = projJobs(k).filter((j) => j.batch === b);
+  const c = (st) => all.filter((j) => j.status === st).length;
+  const t0 = Math.min(...all.map((j) => j.createdAt));
+  const parts = [`<b>${all.length} ${KIND[k].name}</b>`];
+  if (c('done')) parts.push(`<span class="g-ok">${c('done')} xong</span>`);
+  if (c('running')) parts.push(`<span class="g-run">${c('running')} đang tạo</span>`);
+  if (c('queued')) parts.push(`<span class="g-q">${c('queued')} chờ</span>`);
+  if (c('error')) parts.push(`<span class="g-err">${c('error')} lỗi</span>`);
+  const acts = selMode[k]
+    ? `<button class="sm ghost" onclick="selBatch('${k}','${b}')">Chọn cả lượt</button>`
+    : (c('done') ? `<button class="sm ghost" onclick="zipBatch('${k}','${b}')">⬇ Tải cả lượt (.zip)</button>` : '');
+  return `<span class="g-time">🕘 ${fmtTime(t0)}</span>${parts.join('<span class="g-dot">·</span>')}<span class="sp"></span>${acts}`;
+}
+function renderJobs(k, force) {
+  const pj = projJobs(k), K = KIND[k];
+  const list = visibleJobs(k);
+  const queued = state.jobs.filter((j) => j.status === 'queued').slice().reverse();
+  E(k, 'empty').hidden = list.length > 0;
+  E(k, 'empty').innerHTML = !pj.length
+    ? `<div class="big">${K.icon}</div>Dự án này chưa có ${K.name} nào. Nhập Prompt ở trên rồi bấm <b>Tạo ${K.name}</b>.`
+    : `<div class="big">🗂️</div>Không có ${K.name} nào trong mục này.`;
+  // Gom theo lượt tạo: lượt đang chạy lên trước, còn lại mới nhất trước.
+  const groups = new Map();
+  list.forEach((j) => { if (!groups.has(j.batch)) groups.set(j.batch, []); groups.get(j.batch).push(j); });
+  const live = (js) => js.some((j) => j.status === 'running' || j.status === 'queued');
+  const ordered = [...groups.entries()].sort(([, a], [, b]) => (live(b) - live(a)) || (Math.max(...b.map((j) => j.createdAt)) - Math.max(...a.map((j) => j.createdAt))));
+  const box = E(k, 'jobs');
+  const old = new Map([...box.querySelectorAll('.job')].map((el) => [el.dataset.id, el]));
+  const oldGrp = new Map([...box.querySelectorAll('.grp')].map((el) => [el.dataset.b, el]));
+  const out = ordered.map(([b, js]) => {
+    js.sort((x, y) => x.createdAt - y.createdAt);
+    let g = oldGrp.get(b);
+    if (!g) {
+      g = document.createElement('div');
+      g.className = 'grp'; g.dataset.b = b;
+      g.innerHTML = '<div class="grp-h"></div><div class="grp-grid"></div>';
+    }
+    const head = batchHead(k, b, js);
+    if (g.firstElementChild.innerHTML !== head) g.firstElementChild.innerHTML = head;
+    const cards = js.map((j) => {
+      const pos = queued.indexOf(j) + 1;
+      const sig = jobSig(j, j.status === 'queued' ? pos : 0);
+      let el = old.get(j.id);
+      if (!el || force || el.dataset.sig !== sig) {
+        const t = document.createElement('div');
+        t.innerHTML = jobHTML(j, pos);
+        const fresh = t.firstElementChild;
+        fresh.dataset.sig = sig;
+        if (el && j.status === 'done' && el.querySelector('video')) {
+          fresh.querySelector('.media').replaceWith(el.querySelector('.media'));
+          if (el.classList.contains('playing')) fresh.classList.add('playing');
+        }
+        const oldBox = el?.querySelector('[data-rbox]');
+        if (oldBox?.querySelector('[data-res]')?.textContent) fresh.querySelector('[data-rbox]').replaceWith(oldBox);
+        el = fresh;
+      }
+      return el;
+    });
+    g.lastElementChild.replaceChildren(...cards);
+    return g;
+  });
+  box.replaceChildren(...out);
+  paintSel(k);
+  tickTimers();
+}
+function tickTimers() {
+  document.querySelectorAll('[data-since]').forEach((el) => {
+    const s = Math.max(0, Math.round((Date.now() - +el.dataset.since) / 1000));
+    el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  });
+}
+function retry(id) { post(`/api/jobs/${id}/retry`).then(refresh); }
+function delJob(id) { api('/api/jobs/' + id, { method: 'DELETE' }).then(refresh).catch((e) => toast(e.message, true)); }
+async function clearJobs(k) {
+  const pj = projJobs(k), name = KIND[k].name;
+  const d = pj.filter((j) => j.status === 'done'), e = pj.filter((j) => j.status === 'error');
+  if (!d.length && !e.length) return toast('Không có gì để dọn');
+  if (!(await askConfirm('Dọn danh sách?', `Bỏ ${d.length} ${name} đã xong và ${e.length} ${name} lỗi khỏi danh sách dự án này.\nFile đã tải vẫn còn trong thư mục.`, 'Dọn'))) return;
+  Promise.all([...d, ...e].map((j) => api('/api/jobs/' + j.id, { method: 'DELETE' }))).then(refresh);
+}
+function openFolder(o = {}) { post('/api/open-output', o); }
+
+// ---------- Cài đặt ----------
+// ---------- Điều hướng sidebar ----------
+const PAGES = ['accounts', 'image', 'video', 'settings'];
+function go(page) {
+  if (!PAGES.includes(page)) page = 'video';
+  if (location.hash !== '#' + page) history.replaceState(null, '', '#' + page);
+  document.querySelectorAll('.page').forEach((el) => el.classList.toggle('on', el.id === 'page-' + page));
+  document.querySelectorAll('.nav').forEach((el) => el.classList.toggle('on', el.dataset.page === page));
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+function renderBadges() {
+  const ready = state.accounts.filter((a) => a.enabled && (a.status === 'ok' || a.status === 'new')).length;
+  const nb = $('nb-accounts');
+  nb.textContent = state.accounts.length ? `${ready}/${state.accounts.length}` : '';
+  nb.className = 'badge';
+  // Số đỏ: tài khoản bị lỗi cần kiểm tra (cookie lỗi).
+  const nErr = state.accounts.filter((a) => a.status === 'invalid').length;
+  $('nb-accerr').textContent = nErr; $('nb-accerr').hidden = !nErr;
+  $('nb-accerr').title = nErr ? `${nErr} tài khoản bị lỗi cookie cần kiểm tra` : '';
+  // Dải cảnh báo: không còn tài khoản nào dùng được.
+  const usableN = state.accounts.filter((a) => a.enabled && a.status !== 'invalid' && a.status !== 'exhausted').length;
+  const waiting = state.jobs.filter((j) => j.status === 'queued').length;
+  for (const k of ['video', 'image']) {
+    const el = $('noacc-' + k);
+    el.hidden = usableN > 0;
+    if (!usableN) el.innerHTML = `⚠ ${state.accounts.length ? 'Không còn tài khoản khả dụng' : 'Chưa có tài khoản nào'}${waiting ? ` — ${waiting} mục đang chờ` : ''}<button class="sm" onclick="go('accounts')">Sang trang Tài khoản</button>`;
+  }
+  for (const k of ['video', 'image']) {
+    const act = state.jobs.filter((j) => (j.kind || 'video') === k && (j.status === 'running' || j.status === 'queued')).length;
+    const nb2 = $('nb-' + k);
+    nb2.textContent = act || '';
+    nb2.className = 'badge' + (act ? ' run' : '');
+  }
+}
+$('showBrowser').onchange = () => post('/api/settings', { headless: !$('showBrowser').checked }).then(() => toast('Áp dụng cho lượt tạo tiếp theo'));
+$('timeoutMin').onchange = () => post('/api/settings', { timeoutMin: $('timeoutMin').value });
+$('wrapPrompt').onchange = () => post('/api/settings', { wrapPrompt: $('wrapPrompt').checked }).then(() => toast('Đã lưu'));
+$('notify').onchange = () => post('/api/settings', { notify: $('notify').checked }).then(() => toast('Đã lưu'));
+
+// ---------- Khởi tạo ----------
+function renderAll(force) {
+  ensureProject(); renderProjects(); renderAccs(); renderStats(); renderBadges(); renderUpdate();
+  for (const k of ['video', 'image']) { renderTabs(k); renderJobs(k, force); renderSum(k); }
+}
+async function refresh() {
+  try { state = await api('/api/state'); } catch { return; }
+  renderAll();
+  if (document.activeElement !== $('timeoutMin')) $('timeoutMin').value = state.settings.timeoutMin;
+  $('showBrowser').checked = !state.settings.headless;
+  $('wrapPrompt').checked = state.settings.wrapPrompt !== false;
+  $('notify').checked = state.settings.notify !== false;
+}
+initWorkspace('video');
+initWorkspace('image');
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAcc(); $('lightbox').classList.remove('on'); $('detailModal').classList.remove('on'); } });
+go(location.hash.slice(1) || 'video'); refresh();
+setInterval(refresh, 2500);
+setInterval(tickTimers, 1000);
+</script>
+</body>
+</html>

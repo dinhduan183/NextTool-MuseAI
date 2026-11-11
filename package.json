@@ -1,0 +1,20 @@
+{
+  "name": "tool-muse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tạo video hàng loạt trên muse.ai bằng cookie",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node launcher.js",
+    "postinstall": "playwright install chromium"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "playwright": "^1.56.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

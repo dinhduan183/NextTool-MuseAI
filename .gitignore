@@ -1,0 +1,8 @@
+# Dữ liệu riêng: cookie tài khoản, lịch sử, ảnh upload — KHÔNG đưa lên GitHub
+data/
+# Video/ảnh đã tạo
+output/
+node_modules/
+.claude/
+.DS_Store
+*.log
