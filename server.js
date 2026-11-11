@@ -41,6 +41,11 @@ jobs.forEach((j) => {
   if (j.status === 'running') j.status = 'queued';
   (j.images || []).forEach((i) => { if (!i.file && i.path) i.file = path.basename(i.path); });
 });
+// Mục tạo trước khi có số thứ tự → đánh số theo thứ tự trong lượt.
+{
+  const cnt = {};
+  jobs.forEach((j) => { if (!j.no) j.no = cnt[j.batch] = (cnt[j.batch] || 0) + 1; });
+}
 accounts.forEach((a) => { if (a.status === 'checking') a.status = a.usage ? 'ok' : 'new'; });
 
 // Dự án: mỗi dự án có danh sách video và thư mục output riêng.
@@ -161,7 +166,8 @@ async function runJob(acc, job) {
       requeue = true;
       return;
     }
-    const fileBase = `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}_${job.id.slice(0, 6)}`;
+    const noPart = job.no ? String(job.no).padStart(3, '0') + (job.copy ? '-' + job.copy : '') + '_' : '';
+    const fileBase = `${noPart}${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}_${job.id.slice(0, 6)}`;
     const proj = projects.find((p) => p.id === job.projectId) || projects[0];
     job.dir = proj.dir;
     const r = await s.generate({
@@ -447,7 +453,22 @@ app.delete('/api/accounts/:id', async (req, res) => {
 });
 
 // Tạo job. items = [{ prompt, images: [chỉ số file upload] }], mỗi item × count = số video.
-app.post('/api/jobs', upload.array('images', 50), (req, res) => {
+const MAX_IMAGES = 500; // số ảnh tối đa mỗi lần bấm Tạo
+// Bọc multer để lỗi upload (quá nhiều ảnh, ảnh quá nặng) trả về thông báo dễ hiểu thay vì văng lỗi.
+const uploadImages = (req, res, next) =>
+  upload.array('images', MAX_IMAGES)(req, res, (err) => {
+    if (!err) return next();
+    const msg =
+      err.code === 'LIMIT_UNEXPECTED_FILE' ? `Tối đa ${MAX_IMAGES} ảnh mỗi lần tạo — hãy chia thành nhiều lượt`
+      : err.code === 'LIMIT_FILE_SIZE' ? 'Có ảnh nặng quá 30 MB'
+      : 'Upload ảnh lỗi: ' + err.message;
+    for (const f of req.files || []) fs.unlink(f.path, () => {});
+    res.status(400).json({ error: msg });
+  });
+app.post('/api/jobs', uploadImages, (req, res) => {
+  // Lệnh bị từ chối thì xoá ảnh vừa upload, tránh rác trong data/uploads.
+  const json0 = res.json.bind(res);
+  res.json = (body) => { if (res.statusCode >= 400) for (const f of req.files || []) fs.unlink(f.path, () => {}); return json0(body); };
   let items;
   try { items = JSON.parse(req.body.items || '[]'); } catch { return res.status(400).json({ error: 'Dữ liệu sai' }); }
   const files = (req.files || []).map((f) => ({ file: path.basename(f.path), name: f.originalname }));
@@ -458,10 +479,12 @@ app.post('/api/jobs', upload.array('images', 50), (req, res) => {
   if (!proj) return res.status(400).json({ error: 'Chưa chọn dự án' });
   const batch = crypto.randomUUID().slice(0, 8);
   let n = 0;
-  for (const it of items) {
+  items.forEach((it, idx) => {
     for (let i = 0; i < count; i++) {
       jobs.push({
         id: crypto.randomUUID(), batch, projectId: proj.id, kind: req.body.kind === 'image' ? 'image' : 'video',
+        no: +it.no || idx + 1, // số thứ tự prompt / ảnh trong lượt tạo (khớp số trong ô nhập)
+        copy: count > 1 ? i + 1 : 0, // bản thứ mấy khi tạo nhiều bản
         prompt: String(it.prompt).trim(),
         images: (it.images || []).map((k) => files[k]).filter(Boolean),
         ratio: req.body.ratio || '', duration: req.body.kind === 'image' ? '' : req.body.duration || '',
@@ -470,7 +493,7 @@ app.post('/api/jobs', upload.array('images', 50), (req, res) => {
       });
       n++;
     }
-  }
+  });
   // Lịch sử prompt (mới nhất lên đầu, không trùng, tối đa 300).
   const kind = req.body.kind === 'image' ? 'image' : 'video';
   for (const it of items.slice().reverse()) {

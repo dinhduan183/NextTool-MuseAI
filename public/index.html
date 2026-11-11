@@ -74,7 +74,7 @@
   .side-stats { display:flex; flex-direction:column; gap:6px; padding:0 4px 8px; }
   .side-stats .chip { justify-content:flex-start; }
   .side-folder { width:100%; text-align:left; }
-  .content { padding:24px 32px 60px; max-width:1440px; width:100%; }
+  .content { padding:24px 32px 60px; width:100%; min-width:0; }
   .page { display:none; }
   .page.on { display:block; }
   .page-h { display:flex; align-items:flex-end; gap:16px; margin-bottom:18px; }
@@ -253,6 +253,8 @@
   .jfoot .rdiff { font-size:11px; color:var(--warn); background:var(--warn-soft); border-radius:6px; padding:0 6px; }
   .jfoot .ratio-ic { border:1.5px solid var(--mut); border-radius:2px; }
   .jfoot .sp { flex:1; }
+  .jno { font-weight:700; font-size:12px; color:var(--acc); background:var(--acc-soft); border-radius:6px; padding:1px 6px; margin-right:8px; flex:none; }
+  .jno small { font-size:10px; font-weight:600; }
   .jfoot .accn { max-width:110px; overflow:hidden; text-overflow:ellipsis; }
   .media .st .err-msg { font-size:12px; max-width:90%; }
   .detail-img { max-width:160px; max-height:160px; border-radius:8px; border:1px solid var(--line); cursor:zoom-in; }
@@ -774,14 +776,14 @@ function renderForm(k) {
 // Danh sách sẽ tạo: [{prompt, images:[chỉ số ảnh]}]
 function buildItems(k) {
   const f = wsForms[k];
-  if (f.src === 'text') return { items: splitPrompts(E(k, 'textPrompts').value).map((p) => ({ prompt: p, images: [] })), missing: [] };
+  if (f.src === 'text') return { items: splitPrompts(E(k, 'textPrompts').value).map((p, i) => ({ prompt: p, images: [], no: i + 1 })), missing: [] };
   if (!f.images.length) return { items: [], missing: [], noImg: true };
   const common = E(k, 'commonPrompt').value.trim();
   const missing = [];
   const items = f.images.map((im, i) => {
     const p = im.prompt.trim() || common;
     if (!p) missing.push(i + 1);
-    return { prompt: p, images: [i] };
+    return { prompt: p, images: [i], no: i + 1 };
   });
   return { items: items.filter((x) => x.prompt), missing };
 }
@@ -1010,6 +1012,7 @@ const ICON = {
   film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="14" height="14" rx="2.5"/><path d="M16.5 10l5-3v10l-5-3z"/></svg>',
 };
 const RSHAPE = { '16:9': [18, 10], '9:16': [10, 18], '1:1': [14, 14], '4:3': [16, 12], '3:4': [12, 16] };
+const jno = (j) => j.no || j._no || '?';
 function jobHTML(j, pos) {
   const isImg = j.kind === 'image', name = isImg ? 'ảnh' : 'video';
   const img = j.images?.[0];
@@ -1037,6 +1040,7 @@ function jobHTML(j, pos) {
   const [rw, rh] = RSHAPE[j.ratio] || [14, 14];
   return `<div class="job" data-id="${j.id}">${media}
     <div class="jfoot">
+      <span class="jno" title="Prompt số ${jno(j)} trong lượt tạo${j.copy ? ` · bản ${j.copy}` : ''}">#${jno(j)}${j.copy ? `<small>.${j.copy}</small>` : ''}</span>
       <span class="it" data-rbox="${j.id}"><span class="ratio-ic" style="width:${rw}px;height:${rh}px"></span><b>${esc(j.ratio || 'Tự động')}</b><span class="res" data-res="${j.id}"></span></span>
       <span class="sp"></span>
       ${isImg ? '' : `<span class="it" title="Thời lượng">${ICON.clock}${j.duration ? esc(j.duration) + 's' : '—'}</span>`}
@@ -1077,7 +1081,7 @@ function showDetail(id) {
   if (!j) return;
   const isImg = j.kind === 'image';
   const took = j.startedAt && j.finishedAt ? Math.round((j.finishedAt - j.startedAt) / 1000) + ' giây' : '—';
-  $('detailTitle').textContent = isImg ? 'Chi tiết ảnh' : 'Chi tiết video';
+  $('detailTitle').textContent = (isImg ? 'Chi tiết ảnh' : 'Chi tiết video') + ` #${jno(j)}${j.copy ? '.' + j.copy : ''}`;
   $('detailBody').innerHTML = `
     <div class="lbl">Prompt</div><div style="white-space:pre-wrap">${esc(j.prompt)}</div>
     ${j.images?.length ? `<div class="lbl">Ảnh gốc</div>${j.images.map((i) => `<img class="detail-img" src="/uploads/${encodeURIComponent(i.file)}" onclick="zoom(this.src)">`).join(' ')}` : ''}
@@ -1110,6 +1114,8 @@ function renderJobs(k, force) {
   const pj = projJobs(k), K = KIND[k];
   const list = visibleJobs(k);
   const queued = state.jobs.filter((j) => j.status === 'queued').slice().reverse();
+  // Thứ tự tạo thật (server trả mới nhất trước) — dùng để xếp thẻ, vì nhiều mục cùng lượt có thể trùng mốc thời gian.
+  const order = new Map(state.jobs.map((j, i) => [j.id, state.jobs.length - i]));
   E(k, 'empty').hidden = list.length > 0;
   E(k, 'empty').innerHTML = !pj.length
     ? `<div class="big">${K.icon}</div>Dự án này chưa có ${K.name} nào. Nhập Prompt ở trên rồi bấm <b>Tạo ${K.name}</b>.`
@@ -1123,7 +1129,8 @@ function renderJobs(k, force) {
   const old = new Map([...box.querySelectorAll('.job')].map((el) => [el.dataset.id, el]));
   const oldGrp = new Map([...box.querySelectorAll('.grp')].map((el) => [el.dataset.b, el]));
   const out = ordered.map(([b, js]) => {
-    js.sort((x, y) => x.createdAt - y.createdAt);
+    js.sort((x, y) => (order.get(x.id) - order.get(y.id)) || (x.createdAt - y.createdAt));
+    js.forEach((j, i) => { if (!j.no) j._no = i + 1; });
     let g = oldGrp.get(b);
     if (!g) {
       g = document.createElement('div');
