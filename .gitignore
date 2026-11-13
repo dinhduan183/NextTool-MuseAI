@@ -6,3 +6,6 @@ node_modules/
 .claude/
 .DS_Store
 *.log
+# Bản đóng gói Windows (scripts/build-windows.sh)
+dist/
+node/

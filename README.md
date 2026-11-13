@@ -11,7 +11,7 @@ Tool chạy trên máy tính để tạo **video** và **ảnh** hàng loạt tr
 
 ## 1. Yêu cầu
 
-- **Node.js 18 trở lên** (khuyên dùng bản LTS) — tải tại <https://nodejs.org>
+- **Node.js 18 trở lên** (khuyên dùng bản LTS) — tải tại <https://nodejs.org>. **Windows dùng bản đóng gói sẵn (xem mục 2) thì không cần cài Node.js.**
 - Kết nối mạng (lần cài đầu tiên tải khoảng 150 MB trình duyệt Chromium)
 - Windows 10 trở lên, hoặc macOS
 
@@ -25,7 +25,9 @@ Hiện ra số phiên bản (ví dụ `v22.11.0`) là được.
 
 ## 2. Tải tool về
 
-**Cách 1 — Tải file ZIP (dễ nhất):** vào trang GitHub của tool → bấm nút xanh **Code** → **Download ZIP** → giải nén ra một thư mục, ví dụ `D:\NextTool-MuseAI` hoặc `~/NextTool-MuseAI`.
+**Windows — bản đóng gói sẵn (dễ nhất, không cần cài Node.js):** tải file `NextTool-MuseAI-Windows-v….zip` ở mục **Releases** trên trang GitHub của tool → giải nén ra một thư mục, ví dụ `D:\NextTool-MuseAI` → làm tiếp mục 3.
+
+**Cách 1 — Tải file ZIP mã nguồn (cần cài Node.js):** vào trang GitHub của tool → bấm nút xanh **Code** → **Download ZIP** → giải nén ra một thư mục, ví dụ `D:\NextTool-MuseAI` hoặc `~/NextTool-MuseAI`.
 
 **Cách 2 — Dùng git:**
 
@@ -135,3 +137,15 @@ Tài khoản, cookie, dự án và video/ảnh đã tạo được giữ nguyên
 3. Đẩy lên nhánh `main`.
 
 Các máy đang dùng tool sẽ thấy thông báo cập nhật.
+
+### Đóng gói bản Windows kèm Node.js
+
+Trên máy Mac (đã commit code), chạy:
+
+```bash
+bash scripts/build-windows.sh
+```
+
+Script tải Node.js LTS bản portable cho Windows (có kiểm tra SHA256), ghép với code đã commit, rồi tạo file `dist/NextTool-MuseAI-Windows-v<version>.zip`. Muốn chọn bản Node cụ thể: `bash scripts/build-windows.sh v22.11.0`.
+
+Tải file zip đó lên **GitHub → Releases**. Thư mục `node\` đi kèm không bị bản cập nhật tự động ghi đè hay xoá, và `ToolMuse-Windows.bat` tự ưu tiên dùng nó.
