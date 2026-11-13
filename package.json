@@ -1,6 +1,6 @@
 {
   "name": "tool-muse",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Tạo video hàng loạt trên muse.ai bằng cookie",
   "main": "server.js",
@@ -17,5 +17,5 @@
   "engines": {
     "node": ">=18"
   },
-  "changelog": "Giao diện giãn hết màn hình; tạo tối đa 500 ảnh mỗi lượt; thẻ và tên file có số thứ tự prompt; sửa lỗi thứ tự hiển thị thẻ."
+  "changelog": "Bản Windows đóng gói sẵn Node.js, không cần cài Node.js; file chạy Windows ổn định hơn khi tự cập nhật."
 }
