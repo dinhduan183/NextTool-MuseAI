@@ -25,15 +25,12 @@ Hiện ra số phiên bản (ví dụ `v22.11.0`) là được.
 
 ## 2. Tải tool về
 
-**Windows — bản đóng gói sẵn (dễ nhất, không cần cài Node.js):** tải file `NextTool-MuseAI-Windows-v….zip` ở mục **Releases** trên trang GitHub của tool → giải nén ra một thư mục, ví dụ `D:\NextTool-MuseAI` → làm tiếp mục 3.
+Chỉ tải tool ở mục **[Releases](https://github.com/dinhduan183/NextTool-MuseAI/releases/latest)** → chọn bản mới nhất → mục **Assets**:
 
-**Cách 1 — Tải file ZIP mã nguồn (cần cài Node.js):** vào trang GitHub của tool → bấm nút xanh **Code** → **Download ZIP** → giải nén ra một thư mục, ví dụ `D:\NextTool-MuseAI` hoặc `~/NextTool-MuseAI`.
+- **Windows:** tải file `NextTool-MuseAI-Windows-v….zip` (đã kèm sẵn Node.js, không cần cài) → giải nén ra một thư mục, ví dụ `D:\NextTool-MuseAI`.
+- **macOS:** tải **Source code (zip)** → giải nén ra một thư mục, ví dụ `~/NextTool-MuseAI`.
 
-**Cách 2 — Dùng git:**
-
-```bash
-git clone https://github.com/dinhduan183/NextTool-MuseAI.git
-```
+> Không tải bằng nút **Code → Download ZIP** — bản đó không kèm Node.js cho Windows.
 
 ## 3. Cài đặt và chạy
 
